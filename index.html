@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROBE — textures vers 360 pour Unity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0B171D; --panel:#10222B; --panel2:#16303B; --line:#22404D; --line2:#2E5568;
+  --ink:#E6EEEC; --muted:#8AA6AE; --amber:#FFB238; --cyan:#59D6C6; --bad:#FF6B6B;
+  --r:3px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:'IBM Plex Sans',system-ui,sans-serif; font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+button,select,input{font-family:inherit;font-size:inherit;color:inherit}
+.mono{font-family:'IBM Plex Mono',monospace}
+
+/* ---------- header ---------- */
+header{
+  display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
+  padding:18px 22px 14px; border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,#0E1F27,#0B171D);
+}
+h1{
+  font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:26px;
+  margin:0; letter-spacing:-.02em;
+}
+h1 span{color:var(--amber)}
+.tag{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);
+}
+header .spacer{flex:1}
+
+/* ---------- layout ---------- */
+main{display:grid;grid-template-columns:340px 1fr;gap:0;min-height:calc(100vh - 62px)}
+.rail{border-right:1px solid var(--line);background:var(--panel);overflow-y:auto;max-height:calc(100vh - 62px)}
+.stage{display:flex;flex-direction:column;min-width:0}
+@media (max-width:900px){
+  main{grid-template-columns:1fr}
+  .rail{max-height:none;border-right:none;border-bottom:1px solid var(--line)}
+}
+
+/* ---------- rail blocks ---------- */
+.block{padding:16px 18px;border-bottom:1px solid var(--line)}
+.eyebrow{
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--cyan);margin:0 0 10px;display:flex;gap:8px;align-items:center;
+}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+
+.drop{
+  border:1px dashed var(--line2);border-radius:var(--r);padding:22px 14px;text-align:center;
+  cursor:pointer;transition:border-color .15s,background .15s;background:#0E1E26;
+}
+.drop:hover,.drop.over{border-color:var(--amber);background:#132A34}
+.drop strong{display:block;font-weight:600;margin-bottom:4px}
+.drop small{color:var(--muted);font-size:12px}
+
+.srcinfo{display:none;gap:12px;align-items:flex-start}
+.srcinfo.on{display:flex}
+.srcinfo canvas{
+  width:96px;height:96px;object-fit:cover;border:1px solid var(--line2);
+  border-radius:var(--r);background:#000;flex:none;image-rendering:auto;
+}
+.kv{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);min-width:0}
+.kv b{color:var(--ink);font-weight:500}
+.kv div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{
+  display:inline-block;padding:1px 6px;border:1px solid var(--amber);color:var(--amber);
+  border-radius:2px;font-size:10px;letter-spacing:.08em;margin-top:5px
+}
+
+label.row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:9px 0}
+label.row>span{font-size:12.5px;color:var(--muted)}
+label.row>span.strong{color:var(--ink)}
+select,input[type=number]{
+  background:#0C1D25;border:1px solid var(--line2);border-radius:var(--r);
+  padding:5px 7px;min-width:0;
+}
+select{width:100%}
+label.col{display:block;margin:10px 0}
+label.col>span{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px}
+input[type=range]{width:100%;accent-color:var(--amber);background:transparent}
+input[type=checkbox]{accent-color:var(--amber);width:15px;height:15px}
+.val{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--amber)}
+.hint{font-size:11.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}
+.hide{display:none !important}
+
+/* ---------- viewport ---------- */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);background:var(--panel)}
+.tabs button{
+  background:none;border:none;border-bottom:2px solid transparent;padding:11px 16px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);cursor:pointer
+}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected=true]{color:var(--amber);border-bottom-color:var(--amber)}
+.tabs .spacer{flex:1}
+.tabs .note{padding:11px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
+
+.viewwrap{position:relative;flex:1;min-height:340px;background:#060F13;overflow:hidden}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#gl.drag{cursor:grabbing}
+#hud{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.empty{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;color:#456570;letter-spacing:.1em;
+  text-transform:uppercase;text-align:center;padding:20px
+}
+
+.faces{padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;overflow:auto}
+.face{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);overflow:hidden}
+.face canvas{width:100%;display:block;aspect-ratio:1;background:#000}
+.face .lb{
+  display:flex;justify-content:space-between;padding:5px 8px;
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);border-top:1px solid var(--line)
+}
+.face .lb b{color:var(--cyan);font-weight:500}
+.latlong{padding:18px;overflow:auto}
+.latlong canvas{width:100%;max-width:1100px;display:block;border:1px solid var(--line);background:#000}
+
+/* ---------- export ---------- */
+.export{border-top:1px solid var(--line);background:var(--panel);padding:14px 18px}
+.exgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px 22px;margin-bottom:12px}
+.chk{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.chk .mono{color:var(--muted);font-size:11px}
+.exbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.exbar label.col{margin:0}
+.btn{
+  background:var(--amber);color:#10222B;border:none;border-radius:var(--r);
+  padding:9px 18px;font-weight:600;cursor:pointer;letter-spacing:.01em
+}
+.btn:hover{background:#FFC65E}
+.btn:disabled{background:#2B3C44;color:#63808A;cursor:not-allowed}
+.btn.ghost{background:none;border:1px solid var(--line2);color:var(--ink);font-weight:500}
+.btn.ghost:hover{border-color:var(--amber);background:#132A34}
+.status{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);margin-left:auto}
+.status.err{color:var(--bad)}
+
+.results{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;display:none}
+.results.on{display:block}
+.filelist{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;max-height:230px;overflow-y:auto}
+.file{display:flex;align-items:center;gap:12px;background:var(--panel2);padding:7px 12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px}
+.file .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file .sz{color:var(--muted)}
+.file a{color:var(--amber);text-decoration:none;border-bottom:1px dotted var(--amber)}
+.file a:hover{color:#FFC65E}
+
+details.guide{margin:14px 18px 22px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
+details.guide summary{
+  cursor:pointer;padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)
+}
+details.guide .body{padding:0 14px 14px;font-size:12.5px;color:var(--muted)}
+details.guide .body b{color:var(--ink);font-weight:600}
+details.guide .body code{font-family:'IBM Plex Mono',monospace;color:var(--amber);font-size:11.5px}
+details.guide .body p{margin:8px 0}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PROBE<span>.</span></h1>
+  <div class="tag">texture &rarr; environnement 360 · sortie Unity</div>
+  <div class="spacer"></div>
+  <div class="tag" id="glinfo">webgl2</div>
+</header>
+
+<main>
+  <!-- ================= RAIL ================= -->
+  <aside class="rail">
+    <div class="block">
+      <p class="eyebrow">Source</p>
+      <div class="drop" id="drop" tabindex="0" role="button">
+        <strong>Déposer une image</strong>
+        <small>PNG · JPG · WebP · Radiance .hdr</small>
+      </div>
+      <input type="file" id="file" accept="image/*,.hdr" hidden>
+      <div class="srcinfo" id="srcinfo">
+        <canvas id="thumb" width="96" height="96"></canvas>
+        <div class="kv">
+          <div id="sname"><b>—</b></div>
+          <div id="sdims">—</div>
+          <div id="sratio">—</div>
+          <div id="sbadge"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <p class="eyebrow">Interprétation de la source</p>
+      <label class="col">
+        <span>Ce que représente l'image</span>
+        <select id="inmode">
+          <option value="auto">Détection automatique</option>
+          <option value="0">Équirectangulaire / lat-long (2:1)</option>
+          <option value="1">Croix horizontale (4×3)</option>
+          <option value="2">Croix verticale (3×4)</option>
+          <option value="3">Bande horizontale (6×1)</option>
+          <option value="4">Bande verticale (1×6)</option>
+          <option value="5">Angular map / light probe</option>
+          <option value="6">Boule miroir</option>
+          <option value="7">Fisheye 180° (dôme au zénith)</option>
+          <option value="8">Texture plate — étirée sur la sphère</option>
+          <option value="9">Texture plate — répétée en tuiles</option>
+        </select>
+      </label>
+      <p class="hint" id="detected">—</p>
+
+      <div id="tilectl" class="hide">
+        <label class="col"><span>Répétitions horizontales <b class="val" id="txv">4</b></span>
+          <input type="range" id="tx" min="1" max="16" step="1" value="4"></label>
+        <label class="col"><span>Répétitions verticales <b class="val" id="tyv">2</b></span>
+          <input type="range" id="ty" min="1" max="8" step="1" value="2"></label>
+        <label class="row"><span>Répétition en miroir (sans couture)</span>
+          <input type="checkbox" id="mirror" checked></label>
+      </div>
+    </div>
+
+    <div class="block">
+      <p class="eyebrow">Orientation</p>
+      <label class="col"><span>Rotation autour de Y <b class="val" id="yawv">0°</b></span>
+        <input type="range" id="yaw" min="-180" max="180" step="1" value="0"></label>
+      <label class="row"><span>Miroir horizontal</span><input type="checkbox" id="fliph"></label>
+      <label class="row"><span>Retourner haut / bas</span><input type="checkbox" id="flipv"></label>
+      <p class="hint">Le centre d'une lat-long correspond à l'axe <b>+X</b> de Unity, comme dans le shader Skybox/Panoramic.</p>
+    </div>
+
+    <div class="block" id="hdrctl">
+      <p class="eyebrow">Exposition (source HDR)</p>
+      <label class="col"><span>Exposition <b class="val" id="expv">0.0 EV</b></span>
+        <input type="range" id="exp" min="-6" max="6" step="0.1" value="0"></label>
+      <label class="row"><span>Tone mapping Reinhard à l'aperçu</span><input type="checkbox" id="tone" checked></label>
+      <p class="hint">L'exposition ne s'applique qu'aux sorties 8 bits et à l'aperçu. Une sortie <b>.hdr</b> conserve les valeurs linéaires d'origine.</p>
+    </div>
+  </aside>
+
+  <!-- ================= STAGE ================= -->
+  <section class="stage">
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="view">Vue 360</button>
+      <button role="tab" aria-selected="false" data-tab="faces">Les 6 faces</button>
+      <button role="tab" aria-selected="false" data-tab="latlong">Lat-long</button>
+      <div class="spacer"></div>
+      <div class="note" id="viewnote">glisser pour regarder · molette pour zoomer</div>
+    </div>
+
+    <div class="viewwrap" id="pane-view">
+      <canvas id="gl"></canvas>
+      <canvas id="hud"></canvas>
+      <div class="empty" id="empty">déposer une image pour commencer</div>
+    </div>
+
+    <div class="faces hide" id="pane-faces"></div>
+
+    <div class="latlong hide" id="pane-latlong">
+      <canvas id="llcanvas" width="1024" height="512"></canvas>
+      <p class="hint">Aperçu 1024×512. La résolution d'export est réglée ci-dessous.</p>
+    </div>
+
+    <div class="export">
+      <p class="eyebrow">Export</p>
+      <div class="exgrid">
+        <label class="chk"><input type="checkbox" id="o_eq" checked> Équirectangulaire <span class="mono">lat-long</span></label>
+        <label class="chk"><input type="checkbox" id="o_faces" checked> 6 faces séparées <span class="mono">skybox 6-sided</span></label>
+        <label class="chk"><input type="checkbox" id="o_strip"> Bande horizontale <span class="mono">6 frames</span></label>
+        <label class="chk"><input type="checkbox" id="o_crossh"> Croix horizontale <span class="mono">4×3</span></label>
+        <label class="chk"><input type="checkbox" id="o_crossv"> Croix verticale <span class="mono">3×4</span></label>
+      </div>
+      <div class="exbar">
+        <label class="col"><span>Largeur lat-long</span>
+          <select id="eqsize">
+            <option value="1024">1024 × 512</option>
+            <option value="2048" selected>2048 × 1024</option>
+            <option value="4096">4096 × 2048</option>
+            <option value="8192">8192 × 4096</option>
+          </select></label>
+        <label class="col"><span>Taille de face</span>
+          <select id="facesize">
+            <option value="256">256</option>
+            <option value="512" selected>512</option>
+            <option value="1024">1024</option>
+            <option value="2048">2048</option>
+          </select></label>
+        <label class="col"><span>Format</span>
+          <select id="fmt">
+            <option value="png">PNG 8 bits</option>
+            <option value="jpeg">JPEG qualité 92</option>
+            <option value="hdr">Radiance .hdr</option>
+          </select></label>
+        <button class="btn" id="gen" disabled>Générer les fichiers</button>
+        <button class="btn ghost hide" id="zip">Tout télécharger (.zip)</button>
+        <div class="status" id="status">en attente d'une source</div>
+      </div>
+
+      <div class="results" id="results">
+        <div class="filelist" id="filelist"></div>
+      </div>
+    </div>
+
+    <details class="guide">
+      <summary>Import dans Unity</summary>
+      <div class="body">
+        <p><b>Lat-long en cubemap</b> — sélectionner la texture, <code>Texture Shape → Cube</code>, <code>Mapping → Latitude-Longitude Layout (Cylindrical)</code>, cocher <code>Convolution Type: None</code> pour un skybox, <code>Specular</code> pour une réflexion.</p>
+        <p><b>Bande ou croix en cubemap</b> — <code>Texture Shape → Cube</code>, <code>Mapping → 6 Frames Layout (Cubic Environment)</code>. L'ordre de la bande est <code>+X −X +Y −Y +Z −Z</code>, celui attendu par Unity.</p>
+        <p><b>6 faces séparées</b> — matériau <code>Skybox/6 Sided</code> : <code>_RightTex</code>=posx, <code>_LeftTex</code>=negx, <code>_UpTex</code>=posy, <code>_DownTex</code>=negy, <code>_FrontTex</code>=posz, <code>_BackTex</code>=negz. Mettre <code>Wrap Mode: Clamp</code> sur les six, sinon des lignes apparaissent aux arêtes.</p>
+        <p><b>Fichiers .hdr</b> — Unity les importe nativement. Activer <code>High Dynamic Range</code> dans l'importateur et laisser la compression sur <code>BC6H</code> pour une lightmap ou une réflexion.</p>
+        <p><b>Éclairage</b> — <code>Window → Rendering → Lighting → Environment → Skybox Material</code>, puis <code>Generate Lighting</code> pour que l'ambiante suive la nouvelle sphère.</p>
+      </div>
+    </details>
+  </section>
+</main>
+
+<script>
+/* =========================================================================
+   PROBE — conversion de textures vers environnements 360
+   Repère : Unity, main gauche, X droite, Y haut, Z avant.
+   Convention lat-long : centre de l'image = +X, v=1 = +Y  (Skybox/Panoramic)
+   Convention cubemap : D3D/Unity, faces +X −X +Y −Y +Z −Z
+   ========================================================================= */
+
+const $ = s => document.querySelector(s);
+const FACES = [
+  {key:'posx', unity:'Right', axis:'+X'},
+  {key:'negx', unity:'Left',  axis:'−X'},
+  {key:'posy', unity:'Up',    axis:'+Y'},
+  {key:'negy', unity:'Down',  axis:'−Y'},
+  {key:'posz', unity:'Front', axis:'+Z'},
+  {key:'negz', unity:'Back',  axis:'−Z'},
+];
+
+const S = {
+  ready:false, name:'texture', isHDR:false, w:0, h:0,
+  inMode:0, autoMode:0, yaw:0, flipH:false, flipV:false,
+  tileX:4, tileY:2, mirror:true, exposure:0, tone:true,
+  view:{yaw:0, pitch:0, fov:75},
+  files:[]
+};
+
+/* ---------------------------------------------------------------- WebGL */
+const glc = $('#gl');
+const gl = glc.getContext('webgl2', {antialias:false, preserveDrawingBuffer:false, alpha:false});
+let floatRT = false;
+if (!gl) {
+  $('#glinfo').textContent = 'webgl2 indisponible';
+  $('#empty').textContent = "ce navigateur n'expose pas WebGL2 — l'outil ne peut pas fonctionner";
+} else {
+  floatRT = !!gl.getExtension('EXT_color_buffer_float');
+  $('#glinfo').textContent = floatRT ? 'webgl2 · float rt' : 'webgl2 · 8 bits seulement';
+}
+
+const VS = `#version 300 es
+layout(location=0) in vec2 aPos;
+out vec2 vUv;
+void main(){ vUv = aPos*0.5+0.5; gl_Position = vec4(aPos,0.0,1.0); }`;
+
+const FS = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform sampler2D uSrc;
+uniform vec2  uSrcSize;
+uniform int   uIn;        // interprétation de la source
+uniform int   uOut;       // 0 lat-long · 1 face · 2 caméra
+uniform int   uFace;
+uniform int   uRot180;
+uniform float uYaw;
+uniform int   uFlipH, uFlipV;
+uniform vec2  uTile;
+uniform int   uMirror;
+uniform mat3  uCam;
+uniform float uAspect, uTanHalf;
+uniform float uExposure;
+uniform int   uEncode;    // 0 brut · 1 affichage · 2 linéaire
+uniform int   uTonemap;
+
+const float PI = 3.141592653589793;
+const float TAU = 6.283185307179586;
+
+/* --- lat-long (convention Unity Skybox/Panoramic) --- */
+vec2 equirectUV(vec3 d){
+  float lon = atan(d.z, d.x);
+  float lat = acos(clamp(d.y, -1.0, 1.0));
+  return vec2(0.5 - lon/TAU, 1.0 - lat/PI);
+}
+vec3 equirectDir(vec2 uv){
+  float lon = (0.5 - uv.x)*TAU;
+  float lat = (1.0 - uv.y)*PI;
+  return vec3(sin(lat)*cos(lon), cos(lat), sin(lat)*sin(lon));
+}
+
+/* --- cubemap D3D/Unity --- */
+vec3 faceDir(int f, vec2 c){
+  if(f==0) return vec3( 1.0,  c.y, -c.x);
+  if(f==1) return vec3(-1.0,  c.y,  c.x);
+  if(f==2) return vec3( c.x,  1.0, -c.y);
+  if(f==3) return vec3( c.x, -1.0,  c.y);
+  if(f==4) return vec3( c.x,  c.y,  1.0);
+  return         vec3(-c.x,  c.y, -1.0);
+}
+void dirToFace(vec3 d, out int f, out vec2 c){
+  vec3 a = abs(d);
+  if(a.x >= a.y && a.x >= a.z){
+    if(d.x > 0.0){ f=0; c = vec2(-d.z, d.y)/a.x; } else { f=1; c = vec2(d.z, d.y)/a.x; }
+  } else if(a.y >= a.z){
+    if(d.y > 0.0){ f=2; c = vec2(d.x, -d.z)/a.y; } else { f=3; c = vec2(d.x, d.z)/a.y; }
+  } else {
+    if(d.z > 0.0){ f=4; c = vec2(d.x, d.y)/a.z; } else { f=5; c = vec2(-d.x, d.y)/a.z; }
+  }
+}
+/* cellule dans la planche : col, ligne depuis le haut, grille, rotation 180 */
+void layoutCell(int mode, int f, out vec2 cell, out vec2 grid, out bool rot){
+  rot = false;
+  if(mode==1){ grid = vec2(4.0,3.0);
+    if(f==0) cell=vec2(2,1); else if(f==1) cell=vec2(0,1); else if(f==2) cell=vec2(1,0);
+    else if(f==3) cell=vec2(1,2); else if(f==4) cell=vec2(1,1); else cell=vec2(3,1);
+  } else if(mode==2){ grid = vec2(3.0,4.0);
+    if(f==0) cell=vec2(2,1); else if(f==1) cell=vec2(0,1); else if(f==2) cell=vec2(1,0);
+    else if(f==3) cell=vec2(1,2); else if(f==4) cell=vec2(1,1); else { cell=vec2(1,3); rot=true; }
+  } else if(mode==3){ grid = vec2(6.0,1.0); cell = vec2(float(f), 0.0);
+  } else { grid = vec2(1.0,6.0); cell = vec2(0.0, float(f)); }
+}
+
+vec4 sampleLayout(int mode, vec3 d){
+  int f; vec2 c; dirToFace(d, f, c);
+  vec2 cell, grid; bool rot; layoutCell(mode, f, cell, grid, rot);
+  if(rot) c = -c;
+  vec2 fuv = c*0.5 + 0.5;
+  vec2 cellPx = uSrcSize/grid;
+  vec2 inset = 0.5/max(cellPx, vec2(2.0));
+  fuv = clamp(fuv, inset, 1.0-inset);
+  vec2 uv = (vec2(cell.x, grid.y-1.0-cell.y) + fuv)/grid;
+  vec2 dx = dFdx(fuv)/grid, dy = dFdy(fuv)/grid;
+  return textureGrad(uSrc, uv, dx, dy);
+}
+
+/* lat-long sans couture au méridien ±180° */
+vec4 sampleEquirect(vec2 uv){
+  vec2 uvB = fract(uv + vec2(0.5, 0.0));
+  vec2 dx = dFdx(uv),  dy = dFdy(uv);
+  vec2 bx = dFdx(uvB), by = dFdy(uvB);
+  if(dot(bx,bx) < dot(dx,dx)) dx = bx;
+  if(dot(by,by) < dot(dy,dy)) dy = by;
+  return textureGrad(uSrc, uv, dx, dy);
+}
+
+vec4 sampleSrc(vec3 d){
+  d = normalize(d);
+  if(uIn == 0) return sampleEquirect(equirectUV(d));
+  if(uIn <= 4) return sampleLayout(uIn, d);
+  if(uIn == 5){                                   // angular map, centre = +Z
+    float r = acos(clamp(d.z, -1.0, 1.0))/PI*0.5;
+    float a = atan(d.y, d.x);
+    return texture(uSrc, vec2(0.5,0.5) + r*vec2(cos(a), sin(a)));
+  }
+  if(uIn == 6){                                   // boule miroir vue depuis −Z
+    vec3 n = normalize(d + vec3(0.0,0.0,-1.0));
+    return texture(uSrc, vec2(0.5) + 0.5*n.xy);
+  }
+  if(uIn == 7){                                   // fisheye 180°, miroité sous l'horizon
+    float r = acos(clamp(abs(d.y), 0.0, 1.0))/PI;
+    float a = atan(d.z, d.x);
+    return texture(uSrc, vec2(0.5,0.5) + r*vec2(cos(a), sin(a)));
+  }
+  if(uIn == 8) return sampleEquirect(equirectUV(d));
+  vec2 base = equirectUV(d);                      // tuiles
+  vec2 uv = base*uTile;
+  if(uMirror == 1){ vec2 m = mod(uv, 2.0); uv = mix(m, 2.0-m, step(1.0, m)); }
+  else uv = fract(uv);
+  return textureGrad(uSrc, uv, dFdx(base)*uTile, dFdy(base)*uTile);
+}
+
+vec3 orient(vec3 d){
+  if(uFlipV == 1) d.y = -d.y;
+  float c = cos(uYaw), s = sin(uYaw);
+  d = vec3(c*d.x - s*d.z, d.y, s*d.x + c*d.z);
+  if(uFlipH == 1) d.z = -d.z;
+  return d;
+}
+
+void main(){
+  vec3 d;
+  if(uOut == 0){
+    d = equirectDir(vUv);
+  } else if(uOut == 1){
+    vec2 c = vUv*2.0 - 1.0;
+    if(uRot180 == 1) c = -c;
+    d = faceDir(uFace, c);
+  } else {
+    vec2 p = (vUv*2.0 - 1.0)*vec2(uAspect, 1.0)*uTanHalf;
+    d = uCam*vec3(p, 1.0);
+  }
+  vec4 col = sampleSrc(orient(d));
+  vec3 c = col.rgb;
+  if(uEncode == 1){
+    c *= exp2(uExposure);
+    if(uTonemap == 1) c = c/(c + 1.0);
+    c = pow(clamp(c, 0.0, 1.0), vec3(1.0/2.2));
+  } else if(uEncode == 2){
+    c *= exp2(uExposure);
+  } else {
+    c = clamp(c, 0.0, 1.0);
+  }
+  fragColor = vec4(c, 1.0);
+}`;
+
+let prog, U = {}, vao, srcTex = null;
+
+function compile(type, src){
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function initGL(){
+  prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
+  gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+  ['uSrc','uSrcSize','uIn','uOut','uFace','uRot180','uYaw','uFlipH','uFlipV','uTile',
+   'uMirror','uCam','uAspect','uTanHalf','uExposure','uEncode','uTonemap']
+    .forEach(n => U[n] = gl.getUniformLocation(prog, n));
+
+  vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  const b = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, b);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.uniform1i(U.uSrc, 0);
+}
+if(gl) initGL();
+
+/* -------------------------------------------------- décodage Radiance */
+function decodeHDR(buffer){
+  const d = new Uint8Array(buffer);
+  let p = 0;
+  const line = () => { let s=''; while(p < d.length && d[p] !== 10){ s += String.fromCharCode(d[p++]); } p++; return s; };
+  const magic = line();
+  if(!magic.startsWith('#?')) throw new Error('en-tête Radiance introuvable');
+  let l;
+  do { l = line(); } while(l !== '');
+  const res = line().trim().match(/-Y\s+(\d+)\s+\+X\s+(\d+)/);
+  if(!res) throw new Error('résolution .hdr non gérée (orientation autre que -Y +X)');
+  const h = +res[1], w = +res[2];
+  const out = new Float32Array(w*h*4);
+  const row = new Uint8Array(w*4);
+
+  for(let y = 0; y < h; y++){
+    if(w >= 8 && w < 32768 && d[p] === 2 && d[p+1] === 2 && ((d[p+2]<<8)|d[p+3]) === w){
+      p += 4;
+      for(let c = 0; c < 4; c++){
+        let x = 0;
+        while(x < w){
+          let cnt = d[p++];
+          if(cnt > 128){ const v = d[p++]; cnt -= 128; while(cnt-- > 0) row[(x++)*4+c] = v; }
+          else { while(cnt-- > 0) row[(x++)*4+c] = d[p++]; }
+        }
+      }
+    } else {
+      for(let x = 0; x < w; x++){
+        row[x*4]=d[p]; row[x*4+1]=d[p+1]; row[x*4+2]=d[p+2]; row[x*4+3]=d[p+3]; p += 4;
+      }
+    }
+    for(let x = 0; x < w; x++){
+      const e = row[x*4+3], o = (y*w+x)*4;
+      const f = e ? Math.pow(2, e-136) : 0;   // 2^(e-128) / 256
+      out[o]   = row[x*4]*f;
+      out[o+1] = row[x*4+1]*f;
+      out[o+2] = row[x*4+2]*f;
+      out[o+3] = 1;
+    }
+  }
+  return {data:out, width:w, height:h};
+}
+
+function encodeHDR(f32, w, h){                      // f32 : lignes du bas vers le haut
+  const header = `#?RADIANCE\nFORMAT=32-bit_rle_rgbe\nSOFTWARE=PROBE\n\n-Y ${h} +X ${w}\n`;
+  const head = new TextEncoder().encode(header);
+  const body = new Uint8Array(w*h*4);
+  let o = 0;
+  for(let y = h-1; y >= 0; y--){
+    for(let x = 0; x < w; x++){
+      const i = (y*w+x)*4;
+      const r = Math.max(0, f32[i]), g = Math.max(0, f32[i+1]), b = Math.max(0, f32[i+2]);
+      const v = Math.max(r, g, b);
+      if(v < 1e-32){ body[o]=body[o+1]=body[o+2]=body[o+3]=0; }
+      else {
+        let e = Math.ceil(Math.log2(v));
+        const f = Math.pow(2, -e)*256;
+        body[o]   = Math.min(255, Math.floor(r*f));
+        body[o+1] = Math.min(255, Math.floor(g*f));
+        body[o+2] = Math.min(255, Math.floor(b*f));
+        body[o+3] = Math.min(255, Math.max(0, e+128));
+      }
+      o += 4;
+    }
+  }
+  const out = new Uint8Array(head.length + body.length);
+  out.set(head, 0); out.set(body, head.length);
+  return out;
+}
+
+/* -------------------------------------------------- chargement source */
+function uploadTexture(pixels, w, h, isHDR){
+  if(srcTex) gl.deleteTexture(srcTex);
+  srcTex = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, srcTex);
+  if(isHDR){
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    const flipped = new Float32Array(w*h*4);
+    const stride = w*4;
+    for(let y = 0; y < h; y++) flipped.set(pixels.subarray((h-1-y)*stride, (h-y)*stride), y*stride);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.FLOAT, flipped);
+  } else {
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  }
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  let mip = true;
+  try { gl.generateMipmap(gl.TEXTURE_2D); } catch(e){ mip = false; }
+  if(gl.getError() !== gl.NO_ERROR) mip = false;
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mip ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+  S.w = w; S.h = h; S.isHDR = isHDR;
+}
+
+function detectMode(w, h){
+  const r = w/h, near = (a,b) => Math.abs(r-a) < b*a;
+  if(near(2, .04))    return 0;
+  if(near(4/3, .03))  return 1;
+  if(near(3/4, .03))  return 2;
+  if(near(6, .05))    return 3;
+  if(near(1/6, .05))  return 4;
+  return 9;
+}
+
+async function loadFile(f){
+  setStatus('lecture de ' + f.name + '…');
+  S.name = f.name.replace(/\.[^.]+$/, '').replace(/[^\w\-]+/g, '_') || 'texture';
+  try{
+    if(/\.hdr$/i.test(f.name)){
+      const {data, width, height} = decodeHDR(await f.arrayBuffer());
+      uploadTexture(data, width, height, true);
+      drawThumbHDR(data, width, height);
+    } else {
+      const bmp = await createImageBitmap(f);
+      uploadTexture(bmp, bmp.width, bmp.height, false);
+      drawThumbBitmap(bmp);
+    }
+  } catch(err){
+    setStatus('lecture impossible : ' + err.message, true);
+    return;
+  }
+  S.autoMode = detectMode(S.w, S.h);
+  S.ready = true;
+  $('#srcinfo').classList.add('on');
+  $('#sname').innerHTML = '<b>' + f.name + '</b>';
+  $('#sdims').textContent = S.w + ' × ' + S.h + ' px';
+  $('#sratio').textContent = 'ratio ' + (S.w/S.h).toFixed(3) + ' : 1';
+  $('#sbadge').innerHTML = S.isHDR ? '<span class="badge">HDR LINÉAIRE</span>' : '';
+  $('#hdrctl').style.opacity = S.isHDR ? 1 : .45;
+  $('#empty').classList.add('hide');
+  $('#gen').disabled = false;
+  applyMode();
+  setStatus('prêt');
+}
+
+function drawThumbBitmap(bmp){
+  const c = $('#thumb'), x = c.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0,0,96,96);
+  const s = Math.min(96/bmp.width, 96/bmp.height), w = bmp.width*s, h = bmp.height*s;
+  x.drawImage(bmp, (96-w)/2, (96-h)/2, w, h);
+}
+function drawThumbHDR(data, w, h){
+  const c = $('#thumb'), x = c.getContext('2d');
+  x.fillStyle = '#000'; x.fillRect(0,0,96,96);
+  const s = Math.min(96/w, 96/h), tw = Math.max(1,(w*s)|0), th = Math.max(1,(h*s)|0);
+  const img = x.createImageData(tw, th);
+  for(let y = 0; y < th; y++) for(let X = 0; X < tw; X++){
+    const sx = ((X/tw)*w)|0, sy = ((y/th)*h)|0, i = (sy*w+sx)*4, o = (y*tw+X)*4;
+    for(let k = 0; k < 3; k++){
+      const v = data[i+k]/(data[i+k]+1);
+      img.data[o+k] = Math.pow(v, 1/2.2)*255;
+    }
+    img.data[o+3] = 255;
+  }
+  x.putImageData(img, ((96-tw)/2)|0, ((96-th)/2)|0);
+}
+
+/* -------------------------------------------------- rendu */
+function setCommon(encode){
+  gl.useProgram(prog);
+  gl.bindVertexArray(vao);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, srcTex);
+  gl.uniform2f(U.uSrcSize, S.w, S.h);
+  gl.uniform1i(U.uIn, S.inMode);
+  gl.uniform1f(U.uYaw, S.yaw*Math.PI/180);
+  gl.uniform1i(U.uFlipH, S.flipH ? 1 : 0);
+  gl.uniform1i(U.uFlipV, S.flipV ? 1 : 0);
+  gl.uniform2f(U.uTile, S.tileX, S.tileY);
+  gl.uniform1i(U.uMirror, S.mirror ? 1 : 0);
+  gl.uniform1f(U.uExposure, S.isHDR ? S.exposure : 0);
+  gl.uniform1i(U.uTonemap, S.tone ? 1 : 0);
+  gl.uniform1i(U.uEncode, S.isHDR ? encode : 0);
+  gl.uniform1i(U.uRot180, 0);
+}
+
+function camMatrix(yawDeg, pitchDeg){
+  const y = yawDeg*Math.PI/180, p = pitchDeg*Math.PI/180;
+  const f = [Math.sin(y)*Math.cos(p), Math.sin(p), Math.cos(y)*Math.cos(p)];
+  const r = [Math.cos(y), 0, -Math.sin(y)];
+  const u = [f[1]*r[2]-f[2]*r[1], f[2]*r[0]-f[0]*r[2], f[0]*r[1]-f[1]*r[0]];
+  return new Float32Array([r[0],r[1],r[2], u[0],u[1],u[2], f[0],f[1],f[2]]);
+}
+
+function renderView(){
+  if(!S.ready) return;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const w = Math.max(1, (glc.clientWidth*dpr)|0), h = Math.max(1, (glc.clientHeight*dpr)|0);
+  if(glc.width !== w || glc.height !== h){ glc.width = w; glc.height = h; }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, w, h);
+  setCommon(1);
+  gl.uniform1i(U.uOut, 2);
+  gl.uniformMatrix3fv(U.uCam, false, camMatrix(S.view.yaw, S.view.pitch));
+  gl.uniform1f(U.uAspect, w/h);
+  gl.uniform1f(U.uTanHalf, Math.tan(S.view.fov*Math.PI/360));
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  drawHUD();
+}
+
+/* cible de rendu hors écran */
+function makeRT(w, h, float){
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, float ? gl.RGBA32F : gl.RGBA8, w, h, 0, gl.RGBA,
+                float ? gl.FLOAT : gl.UNSIGNED_BYTE, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  const fb = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+  if(!ok) throw new Error('cible de rendu ' + w + '×' + h + ' refusée par le pilote');
+  return {fb, tex, w, h, float};
+}
+function freeRT(rt){ gl.deleteFramebuffer(rt.fb); gl.deleteTexture(rt.tex); }
+
+/* dessine une face dans un rectangle de la cible courante */
+function drawFaceInto(face, x, y, size, rot180){
+  gl.viewport(x, y, size, size);
+  gl.uniform1i(U.uOut, 1);
+  gl.uniform1i(U.uFace, face);
+  gl.uniform1i(U.uRot180, rot180 ? 1 : 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.uniform1i(U.uRot180, 0);
+}
+
+const LAYOUTS = {
+  strip:  {cols:6, rows:1, cells:[[0,0],[1,0],[2,0],[3,0],[4,0],[5,0]], rot:[]},
+  crossh: {cols:4, rows:3, cells:[[2,1],[0,1],[1,0],[1,2],[1,1],[3,1]], rot:[]},
+  crossv: {cols:3, rows:4, cells:[[2,1],[0,1],[1,0],[1,2],[1,1],[1,3]], rot:[5]},
+};
+
+/* rend une planche complète et renvoie la cible */
+function renderLayout(kind, faceSize, float){
+  const L = LAYOUTS[kind];
+  const rt = makeRT(L.cols*faceSize, L.rows*faceSize, float);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, rt.fb);
+  gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT);
+  setCommon(float ? 2 : 1);
+  for(let f = 0; f < 6; f++){
+    const [col, row] = L.cells[f];
+    drawFaceInto(f, col*faceSize, (L.rows-1-row)*faceSize, faceSize, L.rot.includes(f));
+  }
+  return rt;
+}
+function renderSingleFace(f, size, float){
+  const rt = makeRT(size, size, float);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, rt.fb);
+  setCommon(float ? 2 : 1);
+  drawFaceInto(f, 0, 0, size, false);
+  return rt;
+}
+function renderEquirect(w, float){
+  const rt = makeRT(w, w/2, float);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, rt.fb);
+  setCommon(float ? 2 : 1);
+  gl.viewport(0, 0, rt.w, rt.h);
+  gl.uniform1i(U.uOut, 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  return rt;
+}
+
+/* lecture : renvoie un canvas (8 bits) ou un Float32Array (float) */
+function readToCanvas(rt){
+  const px = new Uint8Array(rt.w*rt.h*4);
+  gl.readPixels(0, 0, rt.w, rt.h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+  const c = document.createElement('canvas');
+  c.width = rt.w; c.height = rt.h;
+  const img = new ImageData(rt.w, rt.h);
+  const stride = rt.w*4;
+  for(let y = 0; y < rt.h; y++){                     // FBO bas→haut ⇒ image haut→bas
+    img.data.set(px.subarray((rt.h-1-y)*stride, (rt.h-y)*stride), y*stride);
+  }
+  for(let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
+  c.getContext('2d').putImageData(img, 0, 0);
+  return c;
+}
+function readToFloat(rt){
+  const px = new Float32Array(rt.w*rt.h*4);
+  gl.readPixels(0, 0, rt.w, rt.h, gl.RGBA, gl.FLOAT, px);
+  return px;
+}
+
+/* -------------------------------------------------- aperçus secondaires */
+function refreshFaces(){
+  if(!S.ready) return;
+  const host = $('#pane-faces');
+  if(!host.children.length){
+    host.innerHTML = FACES.map((f,i) =>
+      `<div class="face"><canvas id="fc${i}" width="192" height="192"></canvas>
+       <div class="lb"><span>${f.unity}</span><b>${f.axis} · ${f.key}</b></div></div>`).join('');
+  }
+  for(let i = 0; i < 6; i++){
+    const rt = renderSingleFace(i, 192, false);
+    const c = readToCanvas(rt);
+    freeRT(rt);
+    $('#fc'+i).getContext('2d').drawImage(c, 0, 0);
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+function refreshLatlong(){
+  if(!S.ready) return;
+  const rt = renderEquirect(1024, false);
+  const c = readToCanvas(rt);
+  freeRT(rt);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  $('#llcanvas').getContext('2d').drawImage(c, 0, 0);
+}
+
+/* -------------------------------------------------- HUD boussole */
+const hud = $('#hud'), hx = hud.getContext('2d');
+function drawHUD(){
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const w = hud.clientWidth, h = hud.clientHeight;
+  if(hud.width !== (w*dpr|0)){ hud.width = w*dpr|0; hud.height = h*dpr|0; }
+  hx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  hx.clearRect(0, 0, w, h);
+  hx.font = '10px "IBM Plex Mono", monospace';
+  hx.textAlign = 'center';
+
+  const fovH = 2*Math.atan(Math.tan(S.view.fov*Math.PI/360)*(w/h))*180/Math.PI;
+  const pxPerDeg = w/fovH, cy = 26;
+  hx.strokeStyle = 'rgba(89,214,198,.22)';
+  hx.beginPath(); hx.moveTo(0, cy+8); hx.lineTo(w, cy+8); hx.stroke();
+
+  for(let a = -180; a < 180; a += 15){
+    let d = a - S.view.yaw;
+    while(d > 180) d -= 360;
+    while(d < -180) d += 360;
+    const x = w/2 + d*pxPerDeg;
+    if(x < -40 || x > w+40) continue;
+    const major = ((a%90)+360)%90 === 0;
+    hx.strokeStyle = major ? 'rgba(255,178,56,.85)' : 'rgba(89,214,198,.35)';
+    hx.beginPath(); hx.moveTo(x, cy+8); hx.lineTo(x, cy+8-(major?10:5)); hx.stroke();
+    if(major){
+      const lab = a === 0 ? '+Z' : a === 90 ? '+X' : (a === 180 || a === -180) ? '−Z' : '−X';
+      hx.fillStyle = 'rgba(255,178,56,.9)';
+      hx.fillText(lab, x, cy-6);
+    }
+  }
+  // réticule
+  hx.strokeStyle = 'rgba(230,238,236,.35)';
+  hx.beginPath();
+  hx.moveTo(w/2-9, h/2); hx.lineTo(w/2-3, h/2);
+  hx.moveTo(w/2+3, h/2); hx.lineTo(w/2+9, h/2);
+  hx.moveTo(w/2, h/2-9); hx.lineTo(w/2, h/2-3);
+  hx.moveTo(w/2, h/2+3); hx.lineTo(w/2, h/2+9);
+  hx.stroke();
+  // lecture
+  hx.textAlign = 'left';
+  hx.fillStyle = 'rgba(138,166,174,.9)';
+  const yaw = ((S.view.yaw%360)+360)%360;
+  hx.fillText(`lon ${yaw.toFixed(0).padStart(3,'0')}°   lat ${S.view.pitch>=0?'+':'−'}${Math.abs(S.view.pitch).toFixed(0).padStart(2,'0')}°   fov ${S.view.fov|0}°`, 12, h-14);
+}
+
+/* -------------------------------------------------- interactions vue */
+let drag = null;
+glc.addEventListener('pointerdown', e => {
+  drag = {x:e.clientX, y:e.clientY, yaw:S.view.yaw, pitch:S.view.pitch};
+  glc.setPointerCapture(e.pointerId); glc.classList.add('drag');
+});
+glc.addEventListener('pointermove', e => {
+  if(!drag) return;
+  const k = S.view.fov/glc.clientHeight;
+  S.view.yaw = drag.yaw - (e.clientX-drag.x)*k;
+  S.view.pitch = Math.max(-89.9, Math.min(89.9, drag.pitch + (e.clientY-drag.y)*k));
+  renderView();
+});
+const stopDrag = e => { drag = null; glc.classList.remove('drag'); };
+glc.addEventListener('pointerup', stopDrag);
+glc.addEventListener('pointercancel', stopDrag);
+glc.addEventListener('wheel', e => {
+  e.preventDefault();
+  S.view.fov = Math.max(20, Math.min(120, S.view.fov + Math.sign(e.deltaY)*4));
+  renderView();
+}, {passive:false});
+new ResizeObserver(() => renderView()).observe($('#pane-view'));
+
+/* -------------------------------------------------- contrôles */
+function applyMode(){
+  const sel = $('#inmode').value;
+  S.inMode = sel === 'auto' ? S.autoMode : +sel;
+  const names = ['équirectangulaire 2:1','croix horizontale','croix verticale','bande horizontale',
+                 'bande verticale','angular map','boule miroir','fisheye 180°','texture étirée','texture en tuiles'];
+  $('#detected').textContent = S.ready
+    ? (sel === 'auto' ? 'Détecté d\'après le ratio : ' + names[S.autoMode] : 'Forcé : ' + names[S.inMode])
+    : '—';
+  $('#tilectl').classList.toggle('hide', S.inMode !== 9);
+  refresh();
+}
+function refresh(){
+  if(!S.ready) return;
+  renderView();
+  if(activeTab === 'faces') refreshFaces();
+  if(activeTab === 'latlong') refreshLatlong();
+}
+const bind = (id, fn) => $(id).addEventListener('input', fn);
+bind('#inmode', applyMode);
+bind('#yaw', e => { S.yaw = +e.target.value; $('#yawv').textContent = S.yaw + '°'; refresh(); });
+bind('#fliph', e => { S.flipH = e.target.checked; refresh(); });
+bind('#flipv', e => { S.flipV = e.target.checked; refresh(); });
+bind('#tx', e => { S.tileX = +e.target.value; $('#txv').textContent = S.tileX; refresh(); });
+bind('#ty', e => { S.tileY = +e.target.value; $('#tyv').textContent = S.tileY; refresh(); });
+bind('#mirror', e => { S.mirror = e.target.checked; refresh(); });
+bind('#exp', e => { S.exposure = +e.target.value; $('#expv').textContent = S.exposure.toFixed(1) + ' EV'; refresh(); });
+bind('#tone', e => { S.tone = e.target.checked; refresh(); });
+
+let activeTab = 'view';
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  activeTab = b.dataset.tab;
+  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+  $('#pane-view').classList.toggle('hide', activeTab !== 'view');
+  $('#pane-faces').classList.toggle('hide', activeTab !== 'faces');
+  $('#pane-latlong').classList.toggle('hide', activeTab !== 'latlong');
+  $('#viewnote').textContent = activeTab === 'view' ? 'glisser pour regarder · molette pour zoomer'
+    : activeTab === 'faces' ? 'orientation cubemap Unity' : 'centre = +X · haut = +Y';
+  refresh();
+}));
+
+/* -------------------------------------------------- fichiers */
+const drop = $('#drop');
+drop.addEventListener('click', () => $('#file').click());
+drop.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') $('#file').click(); });
+$('#file').addEventListener('change', e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
+['dragenter','dragover'].forEach(t => document.addEventListener(t, e => {
+  e.preventDefault(); drop.classList.add('over');
+}));
+['dragleave','drop'].forEach(t => document.addEventListener(t, e => {
+  e.preventDefault(); if(t === 'dragleave' && e.relatedTarget) return; drop.classList.remove('over');
+}));
+document.addEventListener('drop', e => { if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+
+function setStatus(t, err){
+  const el = $('#status'); el.textContent = t; el.classList.toggle('err', !!err);
+}
+
+/* -------------------------------------------------- export */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function canvasBlob(c, fmt){
+  return new Promise(r => c.toBlob(r, fmt === 'jpeg' ? 'image/jpeg' : 'image/png', 0.92));
+}
+
+$('#gen').addEventListener('click', async () => {
+  const fmt = $('#fmt').value;
+  const eqW = +$('#eqsize').value;
+  const fs  = +$('#facesize').value;
+  const wantHDR = fmt === 'hdr';
+
+  if(wantHDR && !floatRT) return setStatus('sortie .hdr indisponible : ce GPU ne rend pas en flottant', true);
+  if(wantHDR && !S.isHDR) return setStatus('sortie .hdr possible uniquement depuis une source .hdr', true);
+  if(wantHDR && eqW > 4096) return setStatus('limiter la lat-long à 4096 px pour une sortie .hdr', true);
+
+  $('#gen').disabled = true;
+  $('#zip').classList.add('hide');
+  $('#results').classList.remove('on');
+  $('#filelist').innerHTML = '';
+  S.files.forEach(f => URL.revokeObjectURL(f.url));
+  S.files = [];
+
+  const ext = wantHDR ? 'hdr' : (fmt === 'jpeg' ? 'jpg' : 'png');
+  const jobs = [];
+  if($('#o_eq').checked)     jobs.push({kind:'eq'});
+  if($('#o_faces').checked)  for(let i = 0; i < 6; i++) jobs.push({kind:'face', i});
+  if($('#o_strip').checked)  jobs.push({kind:'layout', l:'strip'});
+  if($('#o_crossh').checked) jobs.push({kind:'layout', l:'crossh'});
+  if($('#o_crossv').checked) jobs.push({kind:'layout', l:'crossv'});
+  if(!jobs.length){ $('#gen').disabled = false; return setStatus('aucune sortie cochée', true); }
+
+  try{
+    for(let n = 0; n < jobs.length; n++){
+      const j = jobs[n];
+      setStatus(`rendu ${n+1}/${jobs.length}…`);
+      await sleep(0);
+      let rt, name;
+      if(j.kind === 'eq'){ rt = renderEquirect(eqW, wantHDR); name = `${S.name}_equirect_${rt.w}x${rt.h}`; }
+      else if(j.kind === 'face'){ rt = renderSingleFace(j.i, fs, wantHDR); name = `${S.name}_${FACES[j.i].key}_${FACES[j.i].unity.toLowerCase()}`; }
+      else {
+        rt = renderLayout(j.l, fs, wantHDR);
+        const tag = j.l === 'strip' ? 'strip_6frames' : j.l === 'crossh' ? 'cross_h' : 'cross_v';
+        name = `${S.name}_${tag}_${rt.w}x${rt.h}`;
+      }
+      let blob;
+      if(wantHDR) blob = new Blob([encodeHDR(readToFloat(rt), rt.w, rt.h)], {type:'image/vnd.radiance'});
+      else blob = await canvasBlob(readToCanvas(rt), fmt);
+      freeRT(rt);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      S.files.push({name: name + '.' + ext, blob, url: URL.createObjectURL(blob)});
+    }
+  } catch(err){
+    setStatus('rendu interrompu : ' + err.message, true);
+    $('#gen').disabled = false;
+    return;
+  }
+
+  $('#filelist').innerHTML = S.files.map(f =>
+    `<div class="file"><span class="nm">${f.name}</span><span class="sz">${(f.blob.size/1048576).toFixed(2)} Mo</span>
+     <a href="${f.url}" download="${f.name}">télécharger</a></div>`).join('');
+  $('#results').classList.add('on');
+  $('#zip').classList.remove('hide');
+  $('#gen').disabled = false;
+  setStatus(S.files.length + ' fichier(s) prêt(s)');
+});
+
+$('#zip').addEventListener('click', async () => {
+  if(!S.files.length) return;
+  setStatus('assemblage de l\'archive…');
+  try{
+    if(!window.JSZip){
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    const zip = new JSZip();
+    for(const f of S.files) zip.file(f.name, f.blob);
+    const blob = await zip.generateAsync({type:'blob'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = S.name + '_360.zip';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    setStatus('archive téléchargée');
+  } catch(e){
+    setStatus('archive indisponible — télécharger les fichiers un par un', true);
+    for(const f of S.files){
+      const a = document.createElement('a');
+      a.href = f.url; a.download = f.name; a.click();
+      await sleep(350);
+    }
+  }
+});
+
+$('#expv').textContent = '0.0 EV';
+</script>
+</body>
+</html>
