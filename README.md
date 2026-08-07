@@ -8,7 +8,7 @@ Page HTML autonome · rendu WebGL2 · rien ne quitte la machine
 
 <sub>`lat-long` · `cubemap` · `croix 4×3 / 3×4` · `bande 6 frames` · `angular map` · `boule miroir` · `fisheye 180°` · `Radiance .hdr`</sub>
 
-<img src="docs/ui-vue360.png" width="100%" alt="Interface de PROBE, panorama chargé dans la vue 360 avec la boussole d'axes Unity">
+<img src="docs/ui-hero.png" width="100%" alt="Écran d'accueil de PROBE, titre en très grand sur fond de dégradé animé">
 
 </div>
 
@@ -16,7 +16,7 @@ Page HTML autonome · rendu WebGL2 · rien ne quitte la machine
 
 ## Démarrer
 
-Ouvrir `probe-360.html` dans un navigateur récent. Aucune installation, aucun build, aucun serveur.
+Ouvrir `probe-360.html` dans un navigateur récent. Aucune installation, aucun build, aucun serveur. L'interface se parcourt en scroll, une étape par écran.
 
 1. **Déposer une image.** Le format est déduit du ratio.
 2. **Vérifier l'orientation** dans la vue 360 — la boussole affiche l'axe Unity visé.
@@ -49,6 +49,8 @@ Fichiers acceptés : **PNG · JPG · WebP · Radiance `.hdr`** (RLE et non compr
 <br>
 
 ## Sorties
+
+<img src="docs/ui-vue360.png" width="100%" alt="Vue 360 interactive avec la règle des axes Unity">
 
 <img src="docs/ui-faces.png" width="100%" alt="Les six faces du cubemap avec leurs noms Unity">
 

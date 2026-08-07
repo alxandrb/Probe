@@ -6,328 +6,400 @@
 <title>PROBE — textures vers 360 pour Unity</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0B171D; --panel:#10222B; --panel2:#16303B; --line:#22404D; --line2:#2E5568;
-  --ink:#E6EEEC; --muted:#8AA6AE; --amber:#FFB238; --cyan:#59D6C6; --bad:#FF6B6B;
-  --r:3px;
+  --bg:#120E1F; --surface:#241B3D; --ink:#F5F1FF; --muted:#A99BC9;
+  --pink:#FF6E9C; --cyan:#4CC9F0;
 }
 *{box-sizing:border-box}
-html,body{height:100%}
+html{scroll-behavior:smooth; scroll-snap-type:y proximity; background:var(--bg)}
 body{
   margin:0; background:var(--bg); color:var(--ink);
-  font-family:'IBM Plex Sans',system-ui,sans-serif; font-size:14px; line-height:1.5;
-  -webkit-font-smoothing:antialiased;
+  font-family:Inter,system-ui,sans-serif; font-weight:400; font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
 }
-button,select,input{font-family:inherit;font-size:inherit;color:inherit}
-.mono{font-family:'IBM Plex Mono',monospace}
+button,select,input{font:inherit; color:inherit; border:none; background:none}
+::selection{background:var(--pink); color:#1A0E17}
+:focus-visible{outline:2px solid var(--cyan); outline-offset:4px; border-radius:4px}
 
-/* ---------- header ---------- */
-header{
-  display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
-  padding:18px 22px 14px; border-bottom:1px solid var(--line);
-  background:linear-gradient(180deg,#0E1F27,#0B171D);
-}
-h1{
-  font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:26px;
-  margin:0; letter-spacing:-.02em;
-}
-h1 span{color:var(--amber)}
-.tag{
-  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--muted);
-}
-header .spacer{flex:1}
-
-/* ---------- layout ---------- */
-main{display:grid;grid-template-columns:340px 1fr;gap:0;min-height:calc(100vh - 62px)}
-.rail{border-right:1px solid var(--line);background:var(--panel);overflow-y:auto;max-height:calc(100vh - 62px)}
-.stage{display:flex;flex-direction:column;min-width:0}
-@media (max-width:900px){
-  main{grid-template-columns:1fr}
-  .rail{max-height:none;border-right:none;border-bottom:1px solid var(--line)}
+/* ---------- nappes de couleur ---------- */
+#field{position:fixed; inset:-25vmax; z-index:0; pointer-events:none; filter:blur(90px)}
+#field i{position:absolute; display:block; border-radius:50%; mix-blend-mode:screen}
+#field i:nth-child(1){width:60vmax;height:60vmax;left:2%;top:0;   background:#FF6E9C; opacity:.34; animation:d1 96s ease-in-out infinite alternate}
+#field i:nth-child(2){width:70vmax;height:70vmax;right:0;top:12%; background:#4CC9F0; opacity:.26; animation:d2 124s ease-in-out infinite alternate}
+#field i:nth-child(3){width:55vmax;height:55vmax;left:24%;top:44%;background:#7A4DFF; opacity:.40; animation:d3 108s ease-in-out infinite alternate}
+#field i:nth-child(4){width:48vmax;height:48vmax;right:16%;top:60%;background:#FF6E9C; opacity:.22; animation:d4 140s ease-in-out infinite alternate}
+#field i:nth-child(5){width:64vmax;height:64vmax;left:8%;top:74%; background:#241B3D; opacity:.85; animation:d2 116s ease-in-out infinite alternate-reverse}
+@keyframes d1{to{transform:translate3d(26vmax,18vmax,0) scale(1.25)}}
+@keyframes d2{to{transform:translate3d(-30vmax,22vmax,0) scale(.8)}}
+@keyframes d3{to{transform:translate3d(18vmax,-26vmax,0) scale(1.3)}}
+@keyframes d4{to{transform:translate3d(-22vmax,-14vmax,0) scale(1.15)}}
+@media (prefers-reduced-motion:reduce){#field i{animation:none !important}}
+#veil{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:radial-gradient(125% 95% at 50% 38%, rgba(18,14,31,0) 28%, rgba(18,14,31,.74) 100%);
 }
 
-/* ---------- rail blocks ---------- */
-.block{padding:16px 18px;border-bottom:1px solid var(--line)}
-.eyebrow{
-  font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--cyan);margin:0 0 10px;display:flex;gap:8px;align-items:center;
+/* ---------- structure ---------- */
+main{position:relative; z-index:1}
+section{
+  min-height:100svh; scroll-snap-align:start;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:14svh 7vw; gap:34px;
 }
-.eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
-
-.drop{
-  border:1px dashed var(--line2);border-radius:var(--r);padding:22px 14px;text-align:center;
-  cursor:pointer;transition:border-color .15s,background .15s;background:#0E1E26;
+.wrap{width:100%; max-width:1060px; margin:0 auto}
+.step{
+  font-size:13px; font-weight:500; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--pink); margin:0 0 18px;
 }
-.drop:hover,.drop.over{border-color:var(--amber);background:#132A34}
-.drop strong{display:block;font-weight:600;margin-bottom:4px}
-.drop small{color:var(--muted);font-size:12px}
-
-.srcinfo{display:none;gap:12px;align-items:flex-start}
-.srcinfo.on{display:flex}
-.srcinfo canvas{
-  width:96px;height:96px;object-fit:cover;border:1px solid var(--line2);
-  border-radius:var(--r);background:#000;flex:none;image-rendering:auto;
+h1,h2{
+  font-weight:900; letter-spacing:-.045em; line-height:.9; margin:0 0 22px;
+  text-wrap:balance;
 }
-.kv{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);min-width:0}
-.kv b{color:var(--ink);font-weight:500}
-.kv div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.badge{
-  display:inline-block;padding:1px 6px;border:1px solid var(--amber);color:var(--amber);
-  border-radius:2px;font-size:10px;letter-spacing:.08em;margin-top:5px
-}
-
-label.row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:9px 0}
-label.row>span{font-size:12.5px;color:var(--muted)}
-label.row>span.strong{color:var(--ink)}
-select,input[type=number]{
-  background:#0C1D25;border:1px solid var(--line2);border-radius:var(--r);
-  padding:5px 7px;min-width:0;
-}
-select{width:100%}
-label.col{display:block;margin:10px 0}
-label.col>span{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px}
-input[type=range]{width:100%;accent-color:var(--amber);background:transparent}
-input[type=checkbox]{accent-color:var(--amber);width:15px;height:15px}
-.val{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--amber)}
-.hint{font-size:11.5px;color:var(--muted);margin:8px 0 0;line-height:1.45}
+h1{font-size:clamp(64px,13vw,190px); letter-spacing:-.055em}
+h2{font-size:clamp(38px,6.4vw,92px)}
+.lead{font-size:clamp(17px,1.5vw,21px); color:var(--muted); max-width:62ch; margin:0 0 8px}
+.lead b{color:var(--ink); font-weight:500}
+.small{font-size:14px; color:var(--muted); max-width:60ch}
+.dim{opacity:.42; transition:opacity .5s}
 .hide{display:none !important}
 
-/* ---------- viewport ---------- */
-.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);background:var(--panel)}
-.tabs button{
-  background:none;border:none;border-bottom:2px solid transparent;padding:11px 16px;
-  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--muted);cursor:pointer
+/* ---------- index latéral ---------- */
+nav{
+  position:fixed; right:2.4vw; top:50%; transform:translateY(-50%); z-index:5;
+  display:flex; flex-direction:column; gap:16px; align-items:flex-end;
 }
-.tabs button:hover{color:var(--ink)}
-.tabs button[aria-selected=true]{color:var(--amber);border-bottom-color:var(--amber)}
-.tabs .spacer{flex:1}
-.tabs .note{padding:11px 16px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
+nav a{
+  display:flex; align-items:center; gap:10px; text-decoration:none;
+  font-size:12px; font-weight:500; letter-spacing:.1em; text-transform:uppercase;
+  color:transparent; transition:color .3s;
+}
+nav a span{width:22px; height:2px; background:var(--muted); opacity:.4; transition:all .3s; border-radius:1px}
+nav a:hover{color:var(--muted)}
+nav a.on{color:var(--ink)}
+nav a.on span{background:var(--pink); opacity:1; width:38px}
+@media (max-width:820px){nav{display:none}}
 
-.viewwrap{position:relative;flex:1;min-height:340px;background:#060F13;overflow:hidden}
-#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+/* ---------- contrôles ---------- */
+.drop{
+  width:100%; padding:min(11vh,110px) 5vw; border-radius:32px; cursor:pointer; text-align:center;
+  background:linear-gradient(140deg, rgba(255,110,156,.16), rgba(76,201,240,.13));
+  transition:background .4s, transform .4s;
+}
+.drop:hover,.drop.over{background:linear-gradient(140deg, rgba(255,110,156,.3), rgba(76,201,240,.24)); transform:scale(1.012)}
+.drop b{display:block; font-size:clamp(24px,3.4vw,44px); font-weight:900; letter-spacing:-.04em; line-height:1.05}
+.drop span{color:var(--muted); font-size:15px}
+
+.srcrow{display:flex; align-items:center; gap:26px; flex-wrap:wrap}
+.srcrow canvas{width:120px; height:120px; border-radius:20px; background:#0C0916; object-fit:cover}
+.srcrow .meta{font-size:15px; color:var(--muted)}
+.srcrow .meta b{display:block; color:var(--ink); font-size:22px; font-weight:900; letter-spacing:-.03em; margin-bottom:4px}
+.pill{
+  display:inline-block; margin-top:8px; padding:4px 12px; border-radius:999px;
+  background:rgba(76,201,240,.18); color:var(--cyan); font-size:12px;
+  font-weight:500; letter-spacing:.14em; text-transform:uppercase;
+}
+
+select{
+  appearance:none; background:var(--surface); border-radius:14px; padding:14px 46px 14px 18px;
+  font-size:16px; cursor:pointer; width:100%;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A99BC9' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat:no-repeat; background-position:right 16px center; background-size:18px;
+}
+select:hover{background-color:#2E2350}
+option{background:#241B3D; color:var(--ink)}
+
+.field{margin:22px 0}
+.field>.lb{display:flex; justify-content:space-between; align-items:baseline; gap:16px; margin-bottom:10px}
+.field .lb span{font-size:14px; color:var(--muted)}
+.field .lb b{font-size:26px; font-weight:900; letter-spacing:-.04em; color:var(--pink); font-variant-numeric:tabular-nums}
+
+input[type=range]{appearance:none; width:100%; height:26px; cursor:pointer; background:none}
+input[type=range]::-webkit-slider-runnable-track{height:3px; border-radius:2px; background:rgba(169,155,201,.3)}
+input[type=range]::-webkit-slider-thumb{appearance:none; margin-top:-10px; width:23px; height:23px; border-radius:50%; background:var(--pink)}
+input[type=range]::-moz-range-track{height:3px; border-radius:2px; background:rgba(169,155,201,.3)}
+input[type=range]::-moz-range-thumb{width:23px; height:23px; border:none; border-radius:50%; background:var(--pink)}
+
+.chips{display:flex; flex-wrap:wrap; gap:12px}
+.chip{
+  display:inline-flex; align-items:center; gap:11px; cursor:pointer; user-select:none;
+  background:var(--surface); border-radius:999px; padding:12px 22px; color:var(--muted);
+  font-size:15px; transition:background .3s,color .3s; position:relative;
+}
+.chip input{position:absolute; opacity:0; pointer-events:none}
+.chip i{width:9px; height:9px; border-radius:50%; background:rgba(245,241,255,.25); transition:background .3s}
+.chip em{font-style:normal; font-size:13px; opacity:.6}
+.chip:hover{background:#2E2350}
+.chip.on{background:rgba(255,110,156,.18); color:var(--ink)}
+.chip.on i{background:var(--pink)}
+
+.btn{
+  background:var(--pink); color:#1A0E17; font-weight:900; letter-spacing:-.02em; font-size:17px;
+  padding:16px 34px; border-radius:999px; cursor:pointer; transition:transform .25s, background .25s;
+}
+.btn:hover:not(:disabled){transform:translateY(-2px); background:#FF89AE}
+.btn:disabled{background:var(--surface); color:var(--muted); cursor:not-allowed}
+.btn.alt{background:rgba(76,201,240,.2); color:var(--cyan)}
+.btn.alt:hover{background:rgba(76,201,240,.32)}
+
+.switch{display:flex; gap:28px; flex-wrap:wrap; margin-bottom:22px}
+.switch button{
+  font-size:14px; font-weight:500; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--muted); cursor:pointer; padding:4px 0; transition:color .3s;
+}
+.switch button:hover{color:var(--ink)}
+.switch button[aria-selected=true]{color:var(--pink)}
+
+/* ---------- aperçus ---------- */
+.viewport{position:relative; width:100%; height:min(56svh,560px); border-radius:26px; overflow:hidden; background:#0C0916}
+#gl{position:absolute; inset:0; width:100%; height:100%; display:block; cursor:grab; touch-action:none}
 #gl.drag{cursor:grabbing}
-#hud{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.empty{
-  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-family:'IBM Plex Mono',monospace;font-size:12px;color:#456570;letter-spacing:.1em;
-  text-transform:uppercase;text-align:center;padding:20px
+#hud{position:absolute; inset:0; width:100%; height:100%; pointer-events:none}
+.blank{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  color:var(--muted); font-size:15px; text-align:center; padding:24px;
 }
-
-.faces{padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;overflow:auto}
-.face{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);overflow:hidden}
-.face canvas{width:100%;display:block;aspect-ratio:1;background:#000}
-.face .lb{
-  display:flex;justify-content:space-between;padding:5px 8px;
-  font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);border-top:1px solid var(--line)
-}
-.face .lb b{color:var(--cyan);font-weight:500}
-.latlong{padding:18px;overflow:auto}
-.latlong canvas{width:100%;max-width:1100px;display:block;border:1px solid var(--line);background:#000}
+.grid6{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:18px}
+.grid6 canvas{width:100%; aspect-ratio:1; display:block; border-radius:18px; background:#0C0916}
+.grid6 .cap{display:flex; justify-content:space-between; margin-top:9px; font-size:13px; color:var(--muted)}
+.grid6 .cap b{color:var(--cyan); font-weight:500}
+#llcanvas{width:100%; display:block; border-radius:22px; background:#0C0916}
 
 /* ---------- export ---------- */
-.export{border-top:1px solid var(--line);background:var(--panel);padding:14px 18px}
-.exgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px 22px;margin-bottom:12px}
-.chk{display:flex;align-items:center;gap:8px;font-size:12.5px}
-.chk .mono{color:var(--muted);font-size:11px}
-.exbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
-.exbar label.col{margin:0}
-.btn{
-  background:var(--amber);color:#10222B;border:none;border-radius:var(--r);
-  padding:9px 18px;font-weight:600;cursor:pointer;letter-spacing:.01em
+.exrow{display:flex; gap:26px; align-items:flex-end; flex-wrap:wrap; margin:34px 0 18px}
+.exrow .field{margin:0; min-width:170px}
+.exrow .field .lb{margin-bottom:8px}
+.status{font-size:15px; color:var(--muted); align-self:center}
+.status.err{color:var(--pink)}
+.files{display:flex; flex-direction:column; gap:2px; margin-top:12px; max-height:34svh; overflow-y:auto}
+.file{
+  display:flex; align-items:center; gap:18px; padding:13px 20px; border-radius:14px;
+  background:rgba(36,27,61,.62); font-size:15px;
 }
-.btn:hover{background:#FFC65E}
-.btn:disabled{background:#2B3C44;color:#63808A;cursor:not-allowed}
-.btn.ghost{background:none;border:1px solid var(--line2);color:var(--ink);font-weight:500}
-.btn.ghost:hover{border-color:var(--amber);background:#132A34}
-.status{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);margin-left:auto}
-.status.err{color:var(--bad)}
+.file .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.file .sz{color:var(--muted); font-variant-numeric:tabular-nums}
+.file a{color:var(--cyan); text-decoration:none; font-weight:500}
+.file a:hover{color:var(--ink)}
 
-.results{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;display:none}
-.results.on{display:block}
-.filelist{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;max-height:230px;overflow-y:auto}
-.file{display:flex;align-items:center;gap:12px;background:var(--panel2);padding:7px 12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px}
-.file .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.file .sz{color:var(--muted)}
-.file a{color:var(--amber);text-decoration:none;border-bottom:1px dotted var(--amber)}
-.file a:hover{color:#FFC65E}
-
-details.guide{margin:14px 18px 22px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
-details.guide summary{
-  cursor:pointer;padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;
-  letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)
-}
-details.guide .body{padding:0 14px 14px;font-size:12.5px;color:var(--muted)}
-details.guide .body b{color:var(--ink);font-weight:600}
-details.guide .body code{font-family:'IBM Plex Mono',monospace;color:var(--amber);font-size:11.5px}
-details.guide .body p{margin:8px 0}
-:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
-@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+/* ---------- guide ---------- */
+.guide{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:38px 54px; margin-top:14px}
+.guide h3{font-size:19px; font-weight:900; letter-spacing:-.03em; margin:0 0 8px}
+.guide p{margin:0; font-size:15px; color:var(--muted)}
+.guide code{color:var(--cyan); font-family:inherit; font-weight:500}
+.guide b{color:var(--ink); font-weight:500}
+footer{padding:0 7vw 9svh; font-size:14px; color:var(--muted); position:relative; z-index:1}
 </style>
 </head>
 <body>
 
-<header>
-  <h1>PROBE<span>.</span></h1>
-  <div class="tag">texture &rarr; environnement 360 · sortie Unity</div>
-  <div class="spacer"></div>
-  <div class="tag" id="glinfo">webgl2</div>
-</header>
+<div id="field" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+<div id="veil" aria-hidden="true"></div>
+
+<nav aria-label="Sections">
+  <a href="#s1" class="on">Source<span></span></a>
+  <a href="#s2">Lecture<span></span></a>
+  <a href="#s3">Orientation<span></span></a>
+  <a href="#s4">Aperçu<span></span></a>
+  <a href="#s5">Export<span></span></a>
+  <a href="#s6">Unity<span></span></a>
+</nav>
 
 <main>
-  <!-- ================= RAIL ================= -->
-  <aside class="rail">
-    <div class="block">
-      <p class="eyebrow">Source</p>
-      <div class="drop" id="drop" tabindex="0" role="button">
-        <strong>Déposer une image</strong>
-        <small>PNG · JPG · WebP · Radiance .hdr</small>
-      </div>
-      <input type="file" id="file" accept="image/*,.hdr" hidden>
-      <div class="srcinfo" id="srcinfo">
-        <canvas id="thumb" width="96" height="96"></canvas>
-        <div class="kv">
-          <div id="sname"><b>—</b></div>
-          <div id="sdims">—</div>
-          <div id="sratio">—</div>
-          <div id="sbadge"></div>
-        </div>
-      </div>
+
+<!-- 1 ................................................. source -->
+<section id="s1">
+  <div class="wrap">
+    <h1>Probe</h1>
+    <p class="lead">N'importe quelle texture devient un environnement 360 prêt pour Unity. Lat-long, cubemap, croix, bande, <b>.hdr</b>. Tout se calcule dans le navigateur, rien n'est envoyé nulle part.</p>
+    <div style="height:34px"></div>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choisir une image">
+      <b>Déposer une image</b>
+      <span>PNG · JPG · WebP · Radiance .hdr</span>
     </div>
-
-    <div class="block">
-      <p class="eyebrow">Interprétation de la source</p>
-      <label class="col">
-        <span>Ce que représente l'image</span>
-        <select id="inmode">
-          <option value="auto">Détection automatique</option>
-          <option value="0">Équirectangulaire / lat-long (2:1)</option>
-          <option value="1">Croix horizontale (4×3)</option>
-          <option value="2">Croix verticale (3×4)</option>
-          <option value="3">Bande horizontale (6×1)</option>
-          <option value="4">Bande verticale (1×6)</option>
-          <option value="5">Angular map / light probe</option>
-          <option value="6">Boule miroir</option>
-          <option value="7">Fisheye 180° (dôme au zénith)</option>
-          <option value="8">Texture plate — étirée sur la sphère</option>
-          <option value="9">Texture plate — répétée en tuiles</option>
-        </select>
-      </label>
-      <p class="hint" id="detected">—</p>
-
-      <div id="tilectl" class="hide">
-        <label class="col"><span>Répétitions horizontales <b class="val" id="txv">4</b></span>
-          <input type="range" id="tx" min="1" max="16" step="1" value="4"></label>
-        <label class="col"><span>Répétitions verticales <b class="val" id="tyv">2</b></span>
-          <input type="range" id="ty" min="1" max="8" step="1" value="2"></label>
-        <label class="row"><span>Répétition en miroir (sans couture)</span>
-          <input type="checkbox" id="mirror" checked></label>
+    <input type="file" id="file" accept="image/*,.hdr" hidden>
+    <div class="srcrow hide" id="srcinfo" style="margin-top:34px">
+      <canvas id="thumb" width="120" height="120"></canvas>
+      <div class="meta">
+        <b id="sname">—</b>
+        <div id="sdims">—</div>
+        <div id="sbadge"></div>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="block">
-      <p class="eyebrow">Orientation</p>
-      <label class="col"><span>Rotation autour de Y <b class="val" id="yawv">0°</b></span>
-        <input type="range" id="yaw" min="-180" max="180" step="1" value="0"></label>
-      <label class="row"><span>Miroir horizontal</span><input type="checkbox" id="fliph"></label>
-      <label class="row"><span>Retourner haut / bas</span><input type="checkbox" id="flipv"></label>
-      <p class="hint">Le centre d'une lat-long correspond à l'axe <b>+X</b> de Unity, comme dans le shader Skybox/Panoramic.</p>
+<!-- 2 ................................................. interprétation -->
+<section id="s2">
+  <div class="wrap">
+    <p class="step">Étape 01</p>
+    <h2>Ce que<br>représente l'image</h2>
+    <p class="lead" id="detected">Le format est déduit du ratio dès le chargement. À forcer si la détection se trompe.</p>
+    <div class="field" style="max-width:560px">
+      <select id="inmode">
+        <option value="auto">Détection automatique</option>
+        <option value="0">Équirectangulaire / lat-long (2:1)</option>
+        <option value="1">Croix horizontale (4×3)</option>
+        <option value="2">Croix verticale (3×4)</option>
+        <option value="3">Bande horizontale (6×1)</option>
+        <option value="4">Bande verticale (1×6)</option>
+        <option value="5">Angular map / light probe</option>
+        <option value="6">Boule miroir</option>
+        <option value="7">Fisheye 180° (dôme au zénith)</option>
+        <option value="8">Texture plate — étirée sur la sphère</option>
+        <option value="9">Texture plate — répétée en tuiles</option>
+      </select>
     </div>
-
-    <div class="block" id="hdrctl">
-      <p class="eyebrow">Exposition (source HDR)</p>
-      <label class="col"><span>Exposition <b class="val" id="expv">0.0 EV</b></span>
-        <input type="range" id="exp" min="-6" max="6" step="0.1" value="0"></label>
-      <label class="row"><span>Tone mapping Reinhard à l'aperçu</span><input type="checkbox" id="tone" checked></label>
-      <p class="hint">L'exposition ne s'applique qu'aux sorties 8 bits et à l'aperçu. Une sortie <b>.hdr</b> conserve les valeurs linéaires d'origine.</p>
+    <div id="tilectl" class="hide" style="max-width:560px">
+      <div class="field">
+        <div class="lb"><span>Répétitions horizontales</span><b id="txv">4</b></div>
+        <input type="range" id="tx" min="1" max="16" step="1" value="4">
+      </div>
+      <div class="field">
+        <div class="lb"><span>Répétitions verticales</span><b id="tyv">2</b></div>
+        <input type="range" id="ty" min="1" max="8" step="1" value="2">
+      </div>
+      <div class="chips">
+        <label class="chip on"><input type="checkbox" id="mirror" checked><i></i>Répétition en miroir</label>
+      </div>
     </div>
-  </aside>
+  </div>
+</section>
 
-  <!-- ================= STAGE ================= -->
-  <section class="stage">
-    <div class="tabs" role="tablist">
+<!-- 3 ................................................. orientation -->
+<section id="s3">
+  <div class="wrap">
+    <p class="step">Étape 02</p>
+    <h2>Orientation</h2>
+    <p class="lead">Le centre d'une lat-long correspond à l'axe <b>+X</b> de Unity, comme dans le shader Skybox/Panoramic. Si un repère connu ne tombe pas au bon endroit, corriger ici plutôt qu'après l'export.</p>
+    <div class="field" style="max-width:640px">
+      <div class="lb"><span>Rotation autour de Y</span><b id="yawv">0°</b></div>
+      <input type="range" id="yaw" min="-180" max="180" step="1" value="0">
+    </div>
+    <div class="chips">
+      <label class="chip"><input type="checkbox" id="fliph"><i></i>Miroir horizontal</label>
+      <label class="chip"><input type="checkbox" id="flipv"><i></i>Retourner haut / bas</label>
+    </div>
+    <div id="hdrctl" style="max-width:640px; margin-top:30px">
+      <div class="field">
+        <div class="lb"><span>Exposition — source HDR seulement</span><b id="expv">0.0 EV</b></div>
+        <input type="range" id="exp" min="-6" max="6" step="0.1" value="0">
+      </div>
+      <div class="chips">
+        <label class="chip on"><input type="checkbox" id="tone" checked><i></i>Tone mapping Reinhard à l'aperçu</label>
+      </div>
+      <p class="small" style="margin-top:16px">L'exposition ne touche que les sorties 8 bits et l'aperçu. Une sortie .hdr conserve les valeurs linéaires d'origine.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4 ................................................. aperçu -->
+<section id="s4">
+  <div class="wrap">
+    <p class="step">Étape 03</p>
+    <h2>Vérifier</h2>
+    <div class="switch" role="tablist">
       <button role="tab" aria-selected="true" data-tab="view">Vue 360</button>
       <button role="tab" aria-selected="false" data-tab="faces">Les 6 faces</button>
       <button role="tab" aria-selected="false" data-tab="latlong">Lat-long</button>
-      <div class="spacer"></div>
-      <div class="note" id="viewnote">glisser pour regarder · molette pour zoomer</div>
     </div>
-
-    <div class="viewwrap" id="pane-view">
+    <div class="viewport" id="pane-view">
       <canvas id="gl"></canvas>
       <canvas id="hud"></canvas>
-      <div class="empty" id="empty">déposer une image pour commencer</div>
+      <div class="blank" id="empty">charger une image pour voir la sphère</div>
     </div>
+    <div class="grid6 hide" id="pane-faces"></div>
+    <div class="hide" id="pane-latlong"><canvas id="llcanvas" width="1024" height="512"></canvas></div>
+    <p class="small" style="margin-top:16px" id="viewnote">Glisser pour regarder, molette pour zoomer. La règle du haut donne l'axe Unity visé.</p>
+  </div>
+</section>
 
-    <div class="faces hide" id="pane-faces"></div>
-
-    <div class="latlong hide" id="pane-latlong">
-      <canvas id="llcanvas" width="1024" height="512"></canvas>
-      <p class="hint">Aperçu 1024×512. La résolution d'export est réglée ci-dessous.</p>
+<!-- 5 ................................................. export -->
+<section id="s5">
+  <div class="wrap">
+    <p class="step">Étape 04</p>
+    <h2>Export</h2>
+    <div class="chips">
+      <label class="chip on"><input type="checkbox" id="o_eq" checked><i></i>Équirectangulaire <em>lat-long</em></label>
+      <label class="chip on"><input type="checkbox" id="o_faces" checked><i></i>6 faces séparées <em>skybox 6-sided</em></label>
+      <label class="chip"><input type="checkbox" id="o_strip"><i></i>Bande horizontale <em>6 frames</em></label>
+      <label class="chip"><input type="checkbox" id="o_crossh"><i></i>Croix horizontale <em>4×3</em></label>
+      <label class="chip"><input type="checkbox" id="o_crossv"><i></i>Croix verticale <em>3×4</em></label>
     </div>
-
-    <div class="export">
-      <p class="eyebrow">Export</p>
-      <div class="exgrid">
-        <label class="chk"><input type="checkbox" id="o_eq" checked> Équirectangulaire <span class="mono">lat-long</span></label>
-        <label class="chk"><input type="checkbox" id="o_faces" checked> 6 faces séparées <span class="mono">skybox 6-sided</span></label>
-        <label class="chk"><input type="checkbox" id="o_strip"> Bande horizontale <span class="mono">6 frames</span></label>
-        <label class="chk"><input type="checkbox" id="o_crossh"> Croix horizontale <span class="mono">4×3</span></label>
-        <label class="chk"><input type="checkbox" id="o_crossv"> Croix verticale <span class="mono">3×4</span></label>
+    <div class="exrow">
+      <div class="field">
+        <div class="lb"><span>Largeur lat-long</span></div>
+        <select id="eqsize">
+          <option value="1024">1024 × 512</option>
+          <option value="2048" selected>2048 × 1024</option>
+          <option value="4096">4096 × 2048</option>
+          <option value="8192">8192 × 4096</option>
+        </select>
       </div>
-      <div class="exbar">
-        <label class="col"><span>Largeur lat-long</span>
-          <select id="eqsize">
-            <option value="1024">1024 × 512</option>
-            <option value="2048" selected>2048 × 1024</option>
-            <option value="4096">4096 × 2048</option>
-            <option value="8192">8192 × 4096</option>
-          </select></label>
-        <label class="col"><span>Taille de face</span>
-          <select id="facesize">
-            <option value="256">256</option>
-            <option value="512" selected>512</option>
-            <option value="1024">1024</option>
-            <option value="2048">2048</option>
-          </select></label>
-        <label class="col"><span>Format</span>
-          <select id="fmt">
-            <option value="png">PNG 8 bits</option>
-            <option value="jpeg">JPEG qualité 92</option>
-            <option value="hdr">Radiance .hdr</option>
-          </select></label>
-        <button class="btn" id="gen" disabled>Générer les fichiers</button>
-        <button class="btn ghost hide" id="zip">Tout télécharger (.zip)</button>
-        <div class="status" id="status">en attente d'une source</div>
+      <div class="field">
+        <div class="lb"><span>Taille de face</span></div>
+        <select id="facesize">
+          <option value="256">256</option>
+          <option value="512" selected>512</option>
+          <option value="1024">1024</option>
+          <option value="2048">2048</option>
+        </select>
       </div>
+      <div class="field">
+        <div class="lb"><span>Format</span></div>
+        <select id="fmt">
+          <option value="png">PNG 8 bits</option>
+          <option value="jpeg">JPEG qualité 92</option>
+          <option value="hdr">Radiance .hdr</option>
+        </select>
+      </div>
+      <button class="btn" id="gen" disabled>Générer les fichiers</button>
+      <button class="btn alt hide" id="zip">Tout télécharger .zip</button>
+      <div class="status" id="status">en attente d'une source</div>
+    </div>
+    <div class="files hide" id="filelist"></div>
+  </div>
+</section>
 
-      <div class="results" id="results">
-        <div class="filelist" id="filelist"></div>
+<!-- 6 ................................................. unity -->
+<section id="s6">
+  <div class="wrap">
+    <p class="step">Étape 05</p>
+    <h2>Import<br>dans Unity</h2>
+    <div class="guide">
+      <div>
+        <h3>Lat-long en cubemap</h3>
+        <p><code>Texture Shape → Cube</code>, <code>Mapping → Latitude-Longitude Layout</code>. <code>Convolution Type: None</code> pour un skybox, <code>Specular</code> pour une réflexion.</p>
+      </div>
+      <div>
+        <h3>Bande ou croix</h3>
+        <p><code>Texture Shape → Cube</code>, <code>Mapping → 6 Frames Layout</code>. L'ordre de la bande est <b>+X −X +Y −Y +Z −Z</b>, celui qu'attend Unity.</p>
+      </div>
+      <div>
+        <h3>6 faces séparées</h3>
+        <p>Matériau <code>Skybox/6 Sided</code> : <b>_RightTex</b> posx, <b>_LeftTex</b> negx, <b>_UpTex</b> posy, <b>_DownTex</b> negy, <b>_FrontTex</b> posz, <b>_BackTex</b> negz. Les six en <code>Wrap Mode: Clamp</code>, sinon des lignes apparaissent aux arêtes.</p>
+      </div>
+      <div>
+        <h3>Fichiers .hdr</h3>
+        <p>Importés nativement. Activer <code>High Dynamic Range</code> et laisser la compression en <code>BC6H</code> pour une réflexion ou une lightmap.</p>
+      </div>
+      <div>
+        <h3>Éclairage</h3>
+        <p><code>Window → Rendering → Lighting → Environment → Skybox Material</code>, puis <code>Generate Lighting</code> pour que l'ambiante suive la nouvelle sphère.</p>
       </div>
     </div>
+  </div>
+</section>
 
-    <details class="guide">
-      <summary>Import dans Unity</summary>
-      <div class="body">
-        <p><b>Lat-long en cubemap</b> — sélectionner la texture, <code>Texture Shape → Cube</code>, <code>Mapping → Latitude-Longitude Layout (Cylindrical)</code>, cocher <code>Convolution Type: None</code> pour un skybox, <code>Specular</code> pour une réflexion.</p>
-        <p><b>Bande ou croix en cubemap</b> — <code>Texture Shape → Cube</code>, <code>Mapping → 6 Frames Layout (Cubic Environment)</code>. L'ordre de la bande est <code>+X −X +Y −Y +Z −Z</code>, celui attendu par Unity.</p>
-        <p><b>6 faces séparées</b> — matériau <code>Skybox/6 Sided</code> : <code>_RightTex</code>=posx, <code>_LeftTex</code>=negx, <code>_UpTex</code>=posy, <code>_DownTex</code>=negy, <code>_FrontTex</code>=posz, <code>_BackTex</code>=negz. Mettre <code>Wrap Mode: Clamp</code> sur les six, sinon des lignes apparaissent aux arêtes.</p>
-        <p><b>Fichiers .hdr</b> — Unity les importe nativement. Activer <code>High Dynamic Range</code> dans l'importateur et laisser la compression sur <code>BC6H</code> pour une lightmap ou une réflexion.</p>
-        <p><b>Éclairage</b> — <code>Window → Rendering → Lighting → Environment → Skybox Material</code>, puis <code>Generate Lighting</code> pour que l'ambiante suive la nouvelle sphère.</p>
-      </div>
-    </details>
-  </section>
 </main>
+<footer id="glinfo">webgl2</footer>
 
 <script>
 /* =========================================================================
    PROBE — conversion de textures vers environnements 360
    Repère : Unity, main gauche, X droite, Y haut, Z avant.
-   Convention lat-long : centre de l'image = +X, v=1 = +Y  (Skybox/Panoramic)
-   Convention cubemap : D3D/Unity, faces +X −X +Y −Y +Z −Z
+   Lat-long : centre de l'image = +X, v=1 = +Y  (Skybox/Panoramic)
+   Cubemap  : convention D3D/Unity, faces +X −X +Y −Y +Z −Z
    ========================================================================= */
 
 const $ = s => document.querySelector(s);
@@ -353,11 +425,13 @@ const glc = $('#gl');
 const gl = glc.getContext('webgl2', {antialias:false, preserveDrawingBuffer:false, alpha:false});
 let floatRT = false;
 if (!gl) {
-  $('#glinfo').textContent = 'webgl2 indisponible';
-  $('#empty').textContent = "ce navigateur n'expose pas WebGL2 — l'outil ne peut pas fonctionner";
+  $('#glinfo').textContent = 'WebGL2 indisponible dans ce navigateur — l\'outil ne peut pas fonctionner.';
+  $('#empty').textContent = 'WebGL2 indisponible';
 } else {
   floatRT = !!gl.getExtension('EXT_color_buffer_float');
-  $('#glinfo').textContent = floatRT ? 'webgl2 · float rt' : 'webgl2 · 8 bits seulement';
+  $('#glinfo').textContent = floatRT
+    ? 'WebGL2, rendu flottant disponible — la sortie .hdr est possible.'
+    : 'WebGL2 sans rendu flottant — sorties 8 bits seulement.';
 }
 
 const VS = `#version 300 es
@@ -622,14 +696,13 @@ function uploadTexture(pixels, w, h, isHDR){
   srcTex = gl.createTexture();
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, srcTex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
   if(isHDR){
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     const flipped = new Float32Array(w*h*4);
     const stride = w*4;
     for(let y = 0; y < h; y++) flipped.set(pixels.subarray((h-1-y)*stride, (h-y)*stride), y*stride);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.FLOAT, flipped);
   } else {
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
   }
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
@@ -677,12 +750,11 @@ async function loadFile(f){
   }
   S.autoMode = detectMode(S.w, S.h);
   S.ready = true;
-  $('#srcinfo').classList.add('on');
-  $('#sname').innerHTML = '<b>' + f.name + '</b>';
-  $('#sdims').textContent = S.w + ' × ' + S.h + ' px';
-  $('#sratio').textContent = 'ratio ' + (S.w/S.h).toFixed(3) + ' : 1';
-  $('#sbadge').innerHTML = S.isHDR ? '<span class="badge">HDR LINÉAIRE</span>' : '';
-  $('#hdrctl').style.opacity = S.isHDR ? 1 : .45;
+  $('#srcinfo').classList.remove('hide');
+  $('#sname').textContent = f.name;
+  $('#sdims').textContent = S.w + ' × ' + S.h + ' px · ratio ' + (S.w/S.h).toFixed(3) + ':1';
+  $('#sbadge').innerHTML = S.isHDR ? '<span class="pill">HDR linéaire</span>' : '';
+  $('#hdrctl').classList.toggle('dim', !S.isHDR);
   $('#empty').classList.add('hide');
   $('#gen').disabled = false;
   applyMode();
@@ -691,14 +763,14 @@ async function loadFile(f){
 
 function drawThumbBitmap(bmp){
   const c = $('#thumb'), x = c.getContext('2d');
-  x.fillStyle = '#000'; x.fillRect(0,0,96,96);
-  const s = Math.min(96/bmp.width, 96/bmp.height), w = bmp.width*s, h = bmp.height*s;
-  x.drawImage(bmp, (96-w)/2, (96-h)/2, w, h);
+  x.fillStyle = '#0C0916'; x.fillRect(0,0,120,120);
+  const s = Math.min(120/bmp.width, 120/bmp.height), w = bmp.width*s, h = bmp.height*s;
+  x.drawImage(bmp, (120-w)/2, (120-h)/2, w, h);
 }
 function drawThumbHDR(data, w, h){
   const c = $('#thumb'), x = c.getContext('2d');
-  x.fillStyle = '#000'; x.fillRect(0,0,96,96);
-  const s = Math.min(96/w, 96/h), tw = Math.max(1,(w*s)|0), th = Math.max(1,(h*s)|0);
+  x.fillStyle = '#0C0916'; x.fillRect(0,0,120,120);
+  const s = Math.min(120/w, 120/h), tw = Math.max(1,(w*s)|0), th = Math.max(1,(h*s)|0);
   const img = x.createImageData(tw, th);
   for(let y = 0; y < th; y++) for(let X = 0; X < tw; X++){
     const sx = ((X/tw)*w)|0, sy = ((y/th)*h)|0, i = (sy*w+sx)*4, o = (y*tw+X)*4;
@@ -708,7 +780,7 @@ function drawThumbHDR(data, w, h){
     }
     img.data[o+3] = 255;
   }
-  x.putImageData(img, ((96-tw)/2)|0, ((96-th)/2)|0);
+  x.putImageData(img, ((120-tw)/2)|0, ((120-th)/2)|0);
 }
 
 /* -------------------------------------------------- rendu */
@@ -787,7 +859,6 @@ const LAYOUTS = {
   crossv: {cols:3, rows:4, cells:[[2,1],[0,1],[1,0],[1,2],[1,1],[1,3]], rot:[5]},
 };
 
-/* rend une planche complète et renvoie la cible */
 function renderLayout(kind, faceSize, float){
   const L = LAYOUTS[kind];
   const rt = makeRT(L.cols*faceSize, L.rows*faceSize, float);
@@ -844,8 +915,8 @@ function refreshFaces(){
   const host = $('#pane-faces');
   if(!host.children.length){
     host.innerHTML = FACES.map((f,i) =>
-      `<div class="face"><canvas id="fc${i}" width="192" height="192"></canvas>
-       <div class="lb"><span>${f.unity}</span><b>${f.axis} · ${f.key}</b></div></div>`).join('');
+      `<div><canvas id="fc${i}" width="192" height="192"></canvas>
+       <div class="cap"><span>${f.unity}</span><b>${f.axis} · ${f.key}</b></div></div>`).join('');
   }
   for(let i = 0; i < 6; i++){
     const rt = renderSingleFace(i, 192, false);
@@ -872,13 +943,11 @@ function drawHUD(){
   if(hud.width !== (w*dpr|0)){ hud.width = w*dpr|0; hud.height = h*dpr|0; }
   hx.setTransform(dpr, 0, 0, dpr, 0, 0);
   hx.clearRect(0, 0, w, h);
-  hx.font = '10px "IBM Plex Mono", monospace';
+  hx.font = '500 11px Inter, system-ui, sans-serif';
   hx.textAlign = 'center';
 
   const fovH = 2*Math.atan(Math.tan(S.view.fov*Math.PI/360)*(w/h))*180/Math.PI;
-  const pxPerDeg = w/fovH, cy = 26;
-  hx.strokeStyle = 'rgba(89,214,198,.22)';
-  hx.beginPath(); hx.moveTo(0, cy+8); hx.lineTo(w, cy+8); hx.stroke();
+  const pxPerDeg = w/fovH, cy = 30;
 
   for(let a = -180; a < 180; a += 15){
     let d = a - S.view.yaw;
@@ -887,27 +956,28 @@ function drawHUD(){
     const x = w/2 + d*pxPerDeg;
     if(x < -40 || x > w+40) continue;
     const major = ((a%90)+360)%90 === 0;
-    hx.strokeStyle = major ? 'rgba(255,178,56,.85)' : 'rgba(89,214,198,.35)';
-    hx.beginPath(); hx.moveTo(x, cy+8); hx.lineTo(x, cy+8-(major?10:5)); hx.stroke();
+    hx.strokeStyle = major ? 'rgba(255,110,156,.95)' : 'rgba(245,241,255,.28)';
+    hx.lineWidth = major ? 2 : 1;
+    hx.beginPath(); hx.moveTo(x, cy+9); hx.lineTo(x, cy+9-(major?11:5)); hx.stroke();
     if(major){
       const lab = a === 0 ? '+Z' : a === 90 ? '+X' : (a === 180 || a === -180) ? '−Z' : '−X';
-      hx.fillStyle = 'rgba(255,178,56,.9)';
-      hx.fillText(lab, x, cy-6);
+      hx.fillStyle = 'rgba(255,110,156,.95)';
+      hx.fillText(lab, x, cy-5);
     }
   }
-  // réticule
-  hx.strokeStyle = 'rgba(230,238,236,.35)';
+  hx.lineWidth = 1;
+  hx.strokeStyle = 'rgba(245,241,255,.4)';
   hx.beginPath();
-  hx.moveTo(w/2-9, h/2); hx.lineTo(w/2-3, h/2);
-  hx.moveTo(w/2+3, h/2); hx.lineTo(w/2+9, h/2);
-  hx.moveTo(w/2, h/2-9); hx.lineTo(w/2, h/2-3);
-  hx.moveTo(w/2, h/2+3); hx.lineTo(w/2, h/2+9);
+  hx.moveTo(w/2-10, h/2); hx.lineTo(w/2-4, h/2);
+  hx.moveTo(w/2+4, h/2); hx.lineTo(w/2+10, h/2);
+  hx.moveTo(w/2, h/2-10); hx.lineTo(w/2, h/2-4);
+  hx.moveTo(w/2, h/2+4); hx.lineTo(w/2, h/2+10);
   hx.stroke();
-  // lecture
+
   hx.textAlign = 'left';
-  hx.fillStyle = 'rgba(138,166,174,.9)';
+  hx.fillStyle = 'rgba(169,155,201,.95)';
   const yaw = ((S.view.yaw%360)+360)%360;
-  hx.fillText(`lon ${yaw.toFixed(0).padStart(3,'0')}°   lat ${S.view.pitch>=0?'+':'−'}${Math.abs(S.view.pitch).toFixed(0).padStart(2,'0')}°   fov ${S.view.fov|0}°`, 12, h-14);
+  hx.fillText(`lon ${yaw.toFixed(0)}°     lat ${S.view.pitch >= 0 ? '+' : '−'}${Math.abs(S.view.pitch).toFixed(0)}°     fov ${S.view.fov|0}°`, 20, h-20);
 }
 
 /* -------------------------------------------------- interactions vue */
@@ -923,7 +993,7 @@ glc.addEventListener('pointermove', e => {
   S.view.pitch = Math.max(-89.9, Math.min(89.9, drag.pitch + (e.clientY-drag.y)*k));
   renderView();
 });
-const stopDrag = e => { drag = null; glc.classList.remove('drag'); };
+const stopDrag = () => { drag = null; glc.classList.remove('drag'); };
 glc.addEventListener('pointerup', stopDrag);
 glc.addEventListener('pointercancel', stopDrag);
 glc.addEventListener('wheel', e => {
@@ -939,9 +1009,10 @@ function applyMode(){
   S.inMode = sel === 'auto' ? S.autoMode : +sel;
   const names = ['équirectangulaire 2:1','croix horizontale','croix verticale','bande horizontale',
                  'bande verticale','angular map','boule miroir','fisheye 180°','texture étirée','texture en tuiles'];
-  $('#detected').textContent = S.ready
-    ? (sel === 'auto' ? 'Détecté d\'après le ratio : ' + names[S.autoMode] : 'Forcé : ' + names[S.inMode])
-    : '—';
+  $('#detected').innerHTML = S.ready
+    ? (sel === 'auto' ? 'Détecté d\'après le ratio : <b>' + names[S.autoMode] + '</b>.'
+                      : 'Lecture forcée en <b>' + names[S.inMode] + '</b>.')
+    : 'Le format est déduit du ratio dès le chargement. À forcer si la détection se trompe.';
   $('#tilectl').classList.toggle('hide', S.inMode !== 9);
   refresh();
 }
@@ -962,17 +1033,36 @@ bind('#mirror', e => { S.mirror = e.target.checked; refresh(); });
 bind('#exp', e => { S.exposure = +e.target.value; $('#expv').textContent = S.exposure.toFixed(1) + ' EV'; refresh(); });
 bind('#tone', e => { S.tone = e.target.checked; refresh(); });
 
+/* état visuel des pastilles */
+document.querySelectorAll('.chip input').forEach(i => {
+  const sync = () => i.closest('.chip').classList.toggle('on', i.checked);
+  i.addEventListener('change', sync); sync();
+});
+
 let activeTab = 'view';
-document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+document.querySelectorAll('.switch button').forEach(b => b.addEventListener('click', () => {
   activeTab = b.dataset.tab;
-  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+  document.querySelectorAll('.switch button').forEach(x => x.setAttribute('aria-selected', x === b));
   $('#pane-view').classList.toggle('hide', activeTab !== 'view');
   $('#pane-faces').classList.toggle('hide', activeTab !== 'faces');
   $('#pane-latlong').classList.toggle('hide', activeTab !== 'latlong');
-  $('#viewnote').textContent = activeTab === 'view' ? 'glisser pour regarder · molette pour zoomer'
-    : activeTab === 'faces' ? 'orientation cubemap Unity' : 'centre = +X · haut = +Y';
+  $('#viewnote').textContent = activeTab === 'view'
+    ? 'Glisser pour regarder, molette pour zoomer. La règle du haut donne l\'axe Unity visé.'
+    : activeTab === 'faces'
+      ? 'Orientation cubemap Unity, telle qu\'elle sera écrite dans les fichiers.'
+      : 'Centre = +X, haut = +Y. Aperçu 1024×512, la résolution d\'export est réglée plus bas.';
   refresh();
 }));
+
+/* index latéral */
+const secs = [...document.querySelectorAll('section')];
+const links = [...document.querySelectorAll('nav a')];
+const spy = new IntersectionObserver(entries => entries.forEach(e => {
+  if(!e.isIntersecting) return;
+  const i = secs.indexOf(e.target);
+  links.forEach((l, k) => l.classList.toggle('on', k === i));
+}), {rootMargin:'-45% 0px -45% 0px'});
+secs.forEach(s => spy.observe(s));
 
 /* -------------------------------------------------- fichiers */
 const drop = $('#drop');
@@ -1009,7 +1099,7 @@ $('#gen').addEventListener('click', async () => {
 
   $('#gen').disabled = true;
   $('#zip').classList.add('hide');
-  $('#results').classList.remove('on');
+  $('#filelist').classList.add('hide');
   $('#filelist').innerHTML = '';
   S.files.forEach(f => URL.revokeObjectURL(f.url));
   S.files = [];
@@ -1026,7 +1116,7 @@ $('#gen').addEventListener('click', async () => {
   try{
     for(let n = 0; n < jobs.length; n++){
       const j = jobs[n];
-      setStatus(`rendu ${n+1}/${jobs.length}…`);
+      setStatus(`rendu ${n+1} / ${jobs.length}…`);
       await sleep(0);
       let rt, name;
       if(j.kind === 'eq'){ rt = renderEquirect(eqW, wantHDR); name = `${S.name}_equirect_${rt.w}x${rt.h}`; }
@@ -1052,10 +1142,10 @@ $('#gen').addEventListener('click', async () => {
   $('#filelist').innerHTML = S.files.map(f =>
     `<div class="file"><span class="nm">${f.name}</span><span class="sz">${(f.blob.size/1048576).toFixed(2)} Mo</span>
      <a href="${f.url}" download="${f.name}">télécharger</a></div>`).join('');
-  $('#results').classList.add('on');
+  $('#filelist').classList.remove('hide');
   $('#zip').classList.remove('hide');
   $('#gen').disabled = false;
-  setStatus(S.files.length + ' fichier(s) prêt(s)');
+  setStatus(S.files.length + ' fichiers prêts');
 });
 
 $('#zip').addEventListener('click', async () => {
@@ -1080,7 +1170,7 @@ $('#zip').addEventListener('click', async () => {
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     setStatus('archive téléchargée');
   } catch(e){
-    setStatus('archive indisponible — télécharger les fichiers un par un', true);
+    setStatus('archive indisponible — téléchargement fichier par fichier', true);
     for(const f of S.files){
       const a = document.createElement('a');
       a.href = f.url; a.download = f.name; a.click();
@@ -1088,8 +1178,6 @@ $('#zip').addEventListener('click', async () => {
     }
   }
 });
-
-$('#expv').textContent = '0.0 EV';
 </script>
 </body>
 </html>
