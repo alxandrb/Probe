@@ -629,9 +629,8 @@ function uploadTexture(pixels, w, h, isHDR){
     for(let y = 0; y < h; y++) flipped.set(pixels.subarray((h-1-y)*stride, (h-y)*stride), y*stride);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.FLOAT, flipped);
   } else {
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
   }
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
@@ -663,8 +662,14 @@ async function loadFile(f){
       drawThumbHDR(data, width, height);
     } else {
       const bmp = await createImageBitmap(f);
-      uploadTexture(bmp, bmp.width, bmp.height, false);
       drawThumbBitmap(bmp);
+      // UNPACK_FLIP_Y_WEBGL est ignoré pour une ImageBitmap : on retourne à la main
+      const flip = document.createElement('canvas');
+      flip.width = bmp.width; flip.height = bmp.height;
+      const fx = flip.getContext('2d');
+      fx.translate(0, bmp.height); fx.scale(1, -1);
+      fx.drawImage(bmp, 0, 0);
+      uploadTexture(flip, bmp.width, bmp.height, false);
     }
   } catch(err){
     setStatus('lecture impossible : ' + err.message, true);
