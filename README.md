@@ -13,7 +13,7 @@ Page HTML autonome · rendu WebGL2 · rien ne quitte la machine
 </div>
 
 ---
-
+https://alxandrb.github.io/Probe/
 ## Démarrer
 
 Ouvrir `probe-360.html` dans un navigateur récent. Aucune installation, aucun build, aucun serveur. L'interface se parcourt en scroll, une étape par écran.
